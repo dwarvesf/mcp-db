@@ -11,12 +11,29 @@ A Model Context Protocol (MCP) server that provides tools for interacting with d
 
 ## Project Structure
 
-- `src/`: Source code
-  - `config.ts`: Configuration management
-  - `duckdb.ts`: DuckDB integration
-  - `gcs.ts`: Google Cloud Storage integration
-  - `postgres.ts`: PostgreSQL database integration
-  - `server.ts`: Main server implementation
+.
+├── Makefile
+├── README.md
+├── docker-compose.yml
+├── docs
+│   ├── llm-full.md
+│   ├── requirements-mcp.md
+│   └── sdk.md
+├── migrations
+│   └── init.sql
+├── package-lock.json
+├── package.json
+├── src
+│   ├── config.ts
+│   ├── duckdb.ts
+│   ├── gcs.ts
+│   ├── handlers.ts
+│   ├── postgres.ts
+│   ├── server.ts
+│   ├── tools.ts
+│   ├── types.ts
+│   └── utils.ts
+└── tsconfig.json
 
 ## Installation
 

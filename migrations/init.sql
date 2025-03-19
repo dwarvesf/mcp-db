@@ -1,5 +1,5 @@
 CREATE TABLE observation_log (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id BIGINT GENERATED ALWAYS AS IDENTITY, -- Removed PRIMARY KEY
     timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     payload JSONB NOT NULL,
     operation TEXT NOT NULL DEFAULT 'insert' CHECK (operation = 'insert'),

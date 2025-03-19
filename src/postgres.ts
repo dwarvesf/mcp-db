@@ -1,4 +1,5 @@
-import { Pool } from 'pg';
+import pkg from 'pg';
+const { Pool } = pkg;
 
 export async function setupPostgres(connectionString: string) {
   const pool = new Pool({
