@@ -41,10 +41,7 @@ npm run build
 The server supports multiple database and storage backends:
 
 ### Environment Variables and CLI Arguments
-- `--database-url`: PostgreSQL connection string (optional)
-- `--gcs-bucket`: Google Cloud Storage bucket name (optional)
-- `--gcs-dirs`: GCS directories to scan for Parquet files (optional)
-- `--parquet-links`: HTTPS URLs to Parquet files (optional)
+- `--database-url`: PostgreSQL connection string (required)
 - `--log-level`: Logging level (debug, info, error) (default: info)
 
 ### GCS Authentication
