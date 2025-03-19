@@ -36,9 +36,6 @@ function serializeBigInt(obj: any): any {
 // Command line argument parsing with validation
 const args = arg({
   '--database-url': String,
-  '--gcs-bucket': String,
-  '--gcs-dirs': [String],
-  '--parquet-links': [String],
   '--log-level': String,
 });
 
@@ -223,8 +220,6 @@ async function setupDuckDB() {
 }
 
 async function setupGCS() {
-  if (!args['--gcs-bucket']) return null;
-
   // Initialize GCS client
   const storage = new Storage();
   
