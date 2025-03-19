@@ -83,3 +83,113 @@ Additional documentation can be found in the `docs/` directory:
 - `docs/llm-full.md`: Comprehensive documentation
 - `docs/requirements-mcp.md`: MCP requirements
 - `docs/sdk.md`: SDK-related documentation
+
+## Development: Integrating a New Tool
+
+To integrate a new tool into an MCP server, follow these key steps:
+
+### 1. Import Required Modules
+
+```typescript
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  Tool,
+} from "@modelcontextprotocol/sdk/types.js";
+```
+
+### 2. Define Tool Interfaces and Definitions
+
+```typescript
+// Define an interface for tool arguments
+interface MyToolArgs {
+  param1: string;
+  param2?: number;
+}
+
+// Create a tool definition with input schema
+const myCustomTool: Tool = {
+  name: "my_custom_tool",
+  description: "A description of what the tool does",
+  inputSchema: {
+    type: "object",
+    properties: {
+      param1: {
+        type: "string",
+        description: "Description of param1"
+      },
+      param2: {
+        type: "number",
+        description: "Optional description of param2"
+      }
+    },
+    required: ["param1"]
+  }
+};
+```
+
+### 3. Set Up Server with Request Handlers
+
+```typescript
+const server = new Server(
+  {
+    name: "My MCP Server",
+    version: "1.0.0"
+  },
+  {
+    capabilities: {
+      tools: {}
+    }
+  }
+);
+
+// Handle tool calls
+server.setRequestHandler(
+  CallToolRequestSchema,
+  async (request) => {
+    switch (request.params.name) {
+      case "my_custom_tool": {
+        const args = request.params.arguments as MyToolArgs;
+        // Implement tool logic here
+        return {
+          content: [{ 
+            type: "text", 
+            text: JSON.stringify({ result: "Tool execution result" }) 
+          }]
+        };
+      }
+      default:
+        throw new Error(`Unknown tool: ${request.params.name}`);
+    }
+  }
+);
+
+// List available tools
+server.setRequestHandler(
+  ListToolsRequestSchema, 
+  async () => ({
+    tools: [myCustomTool]
+  })
+);
+
+// Connect server to transport
+const transport = new StdioServerTransport();
+await server.connect(transport);
+```
+
+### Best Practices
+
+- Always define clear input schemas for your tools
+- Handle errors gracefully
+- Use TypeScript for type safety
+- Implement comprehensive logging
+- Validate input arguments before processing
+
+### Environment Variables
+
+Sensitive information like API keys should be passed via environment variables:
+
+```bash
+TOOL_API_KEY=your_secret_key npm start
