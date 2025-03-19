@@ -38,8 +38,6 @@ npm run build
 
 ## Configuration
 
-The server supports multiple database and storage backends:
-
 ### Environment Variables and CLI Arguments
 - `--database-url`: PostgreSQL connection string (required)
 - `--log-level`: Logging level (debug, info, error) (default: info)
