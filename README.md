@@ -11,6 +11,7 @@ A Model Context Protocol (MCP) server that provides tools for interacting with d
 
 ## Project Structure
 
+```plaintext
 .
 ├── Makefile
 ├── README.md
@@ -34,6 +35,7 @@ A Model Context Protocol (MCP) server that provides tools for interacting with d
 │   ├── types.ts
 │   └── utils.ts
 └── tsconfig.json
+```
 
 ## Installation
 
