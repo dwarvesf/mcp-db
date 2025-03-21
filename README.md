@@ -14,21 +14,25 @@ A Model Context Protocol (MCP) server that provides tools for interacting with d
 ```plaintext
 .
 ├── migrations
-│   └── init.sql
+│   └── init.sql
 ├── src
-│   ├── services
-│   │   ├── duckdb.ts
-│   │   ├── gcs.ts
-│   │   └── postgres.ts
-│   ├── tools
-│   │   ├── duckdb
-│   │   ├── sql
-│   │   └── index.ts
-│   ├── config.ts
-│   ├── handlers.ts
-│   ├── server.ts
-│   ├── types.ts
-│   └── utils.ts
+│   ├── resources
+│   │   ├── gcs
+│   │   ├── sql
+│   │   └── index.ts
+│   ├── services
+│   │   ├── duckdb.ts
+│   │   ├── gcs.ts
+│   │   └── postgres.ts
+│   ├── tools
+│   │   ├── duckdb
+│   │   ├── sql
+│   │   └── index.ts
+│   ├── config.ts
+│   ├── handlers.ts
+│   ├── server.ts
+│   ├── types.ts
+│   └── utils.ts
 ├── Makefile
 ├── README.md
 ├── docker-compose.yml
@@ -109,9 +113,9 @@ To integrate a new tool into the MCP server, follow these steps:
 
 ### 1. Define the Tool
 
-Create a new tool definition in the `src/tools` directory. You can organize tools into subdirectories based on their functionality (e.g., `src/tools/sql`, `src/tools/duckdb`).
+Create a new tool definition in the `src/tools` directory. Organize tools into subdirectories based on their functionality (e.g., `src/tools/sql`, `src/tools/duckdb`). Each tool should have its own file.
 
-For example, to create a new SQL tool, you might create a file named `src/tools/sql/my_new_tool.ts` with the following content:
+For example, to create a new SQL tool, create a file named `src/tools/sql/my_new_tool.ts` with the following content:
 
 ```typescript
 // src/tools/sql/my_new_tool.ts
@@ -137,9 +141,15 @@ export const myNewTool: Tool = {
 };
 ```
 
+-   `MyNewToolArgs`: Defines the structure of the arguments that the tool accepts. This interface is used for type-checking the arguments passed to the tool handler.
+-   `myNewTool`: This object defines the tool itself.
+    -   `name`: A unique name for the tool. This name is used to identify the tool when it is called.
+    -   `description`: A human-readable description of the tool.
+    -   `inputSchema`: A JSON schema that defines the structure of the input arguments. This schema is used to validate the arguments passed to the tool.
+
 ### 2. Implement the Tool Handler
 
-Implement the tool's logic in `src/handlers.ts`. This involves creating a handler function that processes the tool's arguments and performs the desired action.
+Implement the tool's logic within the `createToolHandlers` function in `src/handlers.ts`. This function returns an asynchronous function that processes the tool's arguments and performs the desired action.
 
 ```typescript
 // src/handlers.ts
@@ -167,6 +177,11 @@ export function createToolHandlers(pgPool: Pool | null) {
 }
 ```
 
+-   The `createToolHandlers` function takes a `pgPool` argument, which is a PostgreSQL connection pool. This allows the tool handler to access the PostgreSQL database.
+-   The `switch` statement handles the different tool names.
+-   The `request.params.arguments` object contains the arguments passed to the tool. These arguments are cast to the `MyNewToolArgs` interface for type safety.
+-   The tool handler performs the desired action and returns a `content` object containing the result.
+
 ### 3. Register the Tool
 
 Register the new tool in `src/tools/index.ts` to make it available to the MCP server.
@@ -191,6 +206,13 @@ export const tools: Tool[] = [
 ];
 ```
 
+-   Import the new tool from its file.
+-   Add the new tool to the `tools` array.
+
+### 4. Test the New Tool
+
+After adding the new tool, test it to ensure it is working correctly. You can use the MCP Inspector to call the tool and verify that it returns the expected result.
+
 ### Best Practices
 
 -   Always define clear input schemas for your tools using TypeScript interfaces and the `inputSchema` property.
@@ -200,6 +222,7 @@ export const tools: Tool[] = [
 -   Validate input arguments before processing to prevent unexpected behavior.
 -   Refer to the existing tools in `src/tools` for examples of well-defined tools.
 -   Implement tool handlers in `src/handlers.ts` to keep the server logic organized.
+-   Use environment variables for sensitive information, such as API keys and database credentials.
 
 ### Environment Variables
 
