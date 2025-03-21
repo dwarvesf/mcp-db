@@ -26,10 +26,10 @@ WHERE payload->>'content' IS NOT NULL
 GROUP BY time_bucket('1 week', timestamp), content_text
 HAVING COUNT(*) > 1;
 
--- SELECT add_continuous_aggregate_policy('content_trends',
---     start_offset => INTERVAL '1 month',
---     end_offset => INTERVAL '1 minute',
---     schedule_interval => INTERVAL '1 hour');
+SELECT add_continuous_aggregate_policy('content_trends',
+    start_offset => INTERVAL '1 month',
+    end_offset => INTERVAL '1 minute',
+    schedule_interval => INTERVAL '1 hour');
 
 CREATE MATERIALIZED VIEW entity_trends
 WITH (timescaledb.continuous) AS
@@ -42,10 +42,10 @@ FROM observation_log,
     jsonb_array_elements(payload->'entities') AS entities
 GROUP BY time_bucket('1 week', timestamp), payload->'entities'->>'name';
 
--- SELECT add_continuous_aggregate_policy('entity_trends',
---     start_offset => INTERVAL '1 month',
---     end_offset => INTERVAL '1 minute',
---     schedule_interval => INTERVAL '1 hour');
+SELECT add_continuous_aggregate_policy('entity_trends',
+    start_offset => INTERVAL '1 month',
+    end_offset => INTERVAL '1 minute',
+    schedule_interval => INTERVAL '1 hour');
 
 CREATE MATERIALIZED VIEW relation_trends
 WITH (timescaledb.continuous) AS
@@ -60,10 +60,10 @@ FROM observation_log,
     jsonb_array_elements(payload->'relations') AS relations
 GROUP BY time_bucket('1 week', timestamp), from_entity, to_entity, relation_type;
 
--- SELECT add_continuous_aggregate_policy('relation_trends',
---     start_offset => INTERVAL '1 month',
---     end_offset => INTERVAL '1 minute',
---     schedule_interval => INTERVAL '1 hour');
+SELECT add_continuous_aggregate_policy('relation_trends',
+    start_offset => INTERVAL '1 month',
+    end_offset => INTERVAL '1 minute',
+    schedule_interval => INTERVAL '1 hour');
 
 CREATE MATERIALIZED VIEW coined_term_trends
 WITH (timescaledb.continuous) AS
@@ -76,10 +76,10 @@ FROM observation_log,
     jsonb_array_elements(payload->'coined_terms') AS coined_terms
 GROUP BY time_bucket('1 week', timestamp), payload->'coined_terms'->>'name';
 
--- SELECT add_continuous_aggregate_policy('coined_term_trends',
---     start_offset => INTERVAL '1 month',
---     end_offset => INTERVAL '1 minute',
---     schedule_interval => INTERVAL '1 hour');
+SELECT add_continuous_aggregate_policy('coined_term_trends',
+    start_offset => INTERVAL '1 month',
+    end_offset => INTERVAL '1 minute',
+    schedule_interval => INTERVAL '1 hour');
 
 CREATE MATERIALIZED VIEW tag_trends
 WITH (timescaledb.continuous) AS
@@ -92,10 +92,10 @@ FROM observation_log,
     jsonb_array_elements_text(payload->'tags') AS tag
 GROUP BY time_bucket('1 week', timestamp), tag;
 
--- SELECT add_continuous_aggregate_policy('tag_trends',
---     start_offset => INTERVAL '1 month',
---     end_offset => INTERVAL '1 minute',
---     schedule_interval => INTERVAL '1 hour');
+SELECT add_continuous_aggregate_policy('tag_trends',
+    start_offset => INTERVAL '1 month',
+    end_offset => INTERVAL '1 minute',
+    schedule_interval => INTERVAL '1 hour');
 
 SELECT DISTINCT ON (entities->>'name')
     entities->>'name' AS name,
@@ -105,11 +105,11 @@ FROM observation_log,
     jsonb_array_elements(payload->'entities') AS entities
 GROUP BY entities->>'name', entities->>'type';
 
--- SELECT DISTINCT ON (coined_terms->>'name')
---     coined_terms->>'name' AS term_name,
---     coined_terms->>'type' AS term_type,
---     coined_terms->>'description' AS description,
---     MIN(timestamp) AS first_observed
--- FROM observation_log,
---     jsonb_array_elements(payload->'coined_terms') AS coined_terms
--- GROUP BY coined_terms->>'name', coined_terms->>'type', coined_terms->>'description';
+SELECT DISTINCT ON (coined_terms->>'name')
+    coined_terms->>'name' AS term_name,
+    coined_terms->>'type' AS term_type,
+    coined_terms->>'description' AS description,
+    MIN(timestamp) AS first_observed
+FROM observation_log,
+    jsonb_array_elements(payload->'coined_terms') AS coined_terms
+GROUP BY coined_terms->>'name', coined_terms->>'type', coined_terms->>'description';
