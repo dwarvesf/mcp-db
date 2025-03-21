@@ -42,5 +42,33 @@ export async function setupDuckDB(): Promise<DuckDBConnection> {
     });
   });
 
+  // Configure GCS credentials if available
+  const gcsKeyId = process.env.GCS_KEY_ID;
+  const gcsSecret = process.env.GCS_SECRET;
+
+  if (gcsKeyId && gcsSecret) {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        conn.exec(`CREATE SECRET (
+          TYPE gcs,
+          KEY_ID '${gcsKeyId}',
+          SECRET '${gcsSecret}'
+        );`, (err: Error | null) => {
+          if (err) {
+            console.error("Failed to configure GCS credentials in DuckDB:", err);
+            reject(err);
+          } else {
+            console.error("Successfully configured GCS credentials in DuckDB");
+            resolve();
+          }
+        });
+      });
+    } catch (error) {
+      console.error("Failed to configure GCS credentials:", error);
+    }
+  } else {
+    console.error("No GCS credentials provided (GCS_KEY_ID and GCS_SECRET), GCS access may be limited");
+  }
+
   return conn;
 }

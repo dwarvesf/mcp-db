@@ -17,8 +17,7 @@
     "build": "tsc",
     "start": "node dist/cli.js",
     "dev": "NODE_OPTIONS=\"--loader ts-node/esm\" node --experimental-specifier-resolution=node src/cli.ts",
-    "debug": "mcp-inspector -- NODE_OPTIONS=\"--loader ts-node/esm\" node --experimental-specifier-resolution=node src/cli.ts",
-    "postinstall": "chmod +x bin/mcp-db"
+    "debug": "mcp-inspector -- NODE_OPTIONS=\"--loader ts-node/esm\" node --experimental-specifier-resolution=node src/cli.ts"
   },
   "engines": {
     "node": ">=18"
