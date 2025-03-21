@@ -21,7 +21,11 @@ build:
 
 ## Run the server in development mode
 dev: build
-	NODE_ENV=$(NODE_ENV) npm start -- --database-url postgresql://postgres:postgres@localhost:15432/postgres --log-level debug
+	NODE_ENV=$(NODE_ENV) npm run dev
+
+## debug the server in development mode
+debug: build
+	NODE_ENV=$(NODE_ENV) npx @modelcontextprotocol/inspector make dev
 
 ## Clean the build directory
 clean:
