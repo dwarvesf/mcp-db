@@ -16,8 +16,8 @@
     "prepare": "npm run build",
     "build": "tsc",
     "start": "node dist/cli.js",
-    "dev": "ts-node --esm src/cli.ts",
-    "debug": "mcp-inspector -- ts-node --esm src/cli.ts",
+    "dev": "NODE_OPTIONS=\"--loader ts-node/esm\" node --experimental-specifier-resolution=node src/cli.ts",
+    "debug": "mcp-inspector -- NODE_OPTIONS=\"--loader ts-node/esm\" node --experimental-specifier-resolution=node src/cli.ts",
     "postinstall": "chmod +x bin/mcp-db"
   },
   "engines": {
@@ -49,7 +49,6 @@
     "arg": "^5.0.2",
     "duckdb": "^0.10.0",
     "pg": "^8.11.3",
-    "pgsql-parser": "^13.5.0",
     "typescript": "^5.3.3",
     "zod": "^3.22.4"
   },

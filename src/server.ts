@@ -75,7 +75,7 @@ const server = new Server({
   }
 });
 
-async function main() {
+export async function main(): Promise<void> {
   try {
     console.error("\nStarting Data Query MCP Server...");
 

@@ -20,15 +20,18 @@ build:
 	npm run build
 
 ## Run the server in development mode
-dev: build
-	NODE_ENV=$(NODE_ENV) npm run dev
+dev:
+	npm run build
+	NODE_ENV=development npm run dev
 
 ## debug the server in development mode
-debug: build
-	NODE_ENV=$(NODE_ENV) npx @modelcontextprotocol/inspector make dev
+debug:
+	NODE_ENV=development npm run debug
 
 ## Clean the build directory
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf dist
 
-.PHONY: install build dev clean
+.PHONY: install build dev debug clean
+
+.DEFAULT_GOAL := dev

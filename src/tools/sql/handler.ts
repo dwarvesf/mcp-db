@@ -1,32 +1,41 @@
 import { Pool, QueryResult } from 'pg';
-import { parse as parseSql } from 'pgsql-parser';
 
 const DEFAULT_QUERY_LIMIT = 1000;
 
-function addLimitToQuery(sql: string, limit: number = DEFAULT_QUERY_LIMIT): string {
-  try {
-    // Parse the SQL to check if it's a SELECT query
-    const ast = parseSql(sql);
-    const stmt = ast[0]?.RawStmt?.stmt;
+function isSelectQuery(sql: string): boolean {
+  // Remove comments and normalize whitespace
+  const normalizedSql = sql
+    .replace(/--.*$/gm, '') // Remove single-line comments
+    .replace(/\/\*[\s\S]*?\*\//gm, '') // Remove multi-line comments
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim()
+    .toLowerCase();
 
-    // Only add LIMIT to SELECT queries
-    if (stmt?.SelectStmt) {
-      // Check if query already has a LIMIT clause
-      if (!stmt.SelectStmt.limitCount) {
-        return `${sql} LIMIT ${limit}`;
-      }
-    }
-    return sql;
-  } catch (error) {
-    // If parsing fails, try a simple regex approach as fallback
-    const isSelect = /^\s*SELECT\b/i.test(sql);
-    const hasLimit = /\bLIMIT\s+\d+\b/i.test(sql);
-    
-    if (isSelect && !hasLimit) {
-      return `${sql} LIMIT ${limit}`;
-    }
-    return sql;
+  // Check if it's a SELECT query
+  // This regex matches SELECT at the start, accounting for WITH clauses
+  return /^(with\s+[\s\S]+\s+)?\s*select\s/i.test(normalizedSql);
+}
+
+function hasLimitClause(sql: string): boolean {
+  // Remove comments and normalize whitespace
+  const normalizedSql = sql
+    .replace(/--.*$/gm, '')
+    .replace(/\/\*[\s\S]*?\*\//gm, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+
+  // Check for LIMIT clause, accounting for possible OFFSET
+  return /\blimit\s+\d+(\s*,\s*\d+|\s+offset\s+\d+)?\s*;?\s*$/i.test(normalizedSql);
+}
+
+function addLimitToQuery(sql: string, limit: number = DEFAULT_QUERY_LIMIT): string {
+  if (isSelectQuery(sql) && !hasLimitClause(sql)) {
+    // Remove trailing semicolon if present
+    const trimmedSql = sql.trim().replace(/;$/, '');
+    return `${trimmedSql} LIMIT ${limit}`;
   }
+  return sql;
 }
 
 export async function handlePostgreSQLQuery(
