@@ -14,20 +14,21 @@ A Model Context Protocol (MCP) server that provides tools for interacting with d
 ```plaintext
 .
 ├── migrations
-│   └── init.sql
+│   └── init.sql
 ├── src
-│   ├── tools
-│   │   ├── duckdb
-│   │   ├── sql
-│   │   └── index.ts
-│   ├── config.ts
-│   ├── duckdb.ts
-│   ├── gcs.ts
-│   ├── handlers.ts
-│   ├── postgres.ts
-│   ├── server.ts
-│   ├── types.ts
-│   └── utils.ts
+│   ├── services
+│   │   ├── duckdb.ts
+│   │   ├── gcs.ts
+│   │   └── postgres.ts
+│   ├── tools
+│   │   ├── duckdb
+│   │   ├── sql
+│   │   └── index.ts
+│   ├── config.ts
+│   ├── handlers.ts
+│   ├── server.ts
+│   ├── types.ts
+│   └── utils.ts
 ├── Makefile
 ├── README.md
 ├── docker-compose.yml
@@ -56,158 +57,150 @@ npm run build
 
 ## Configuration
 
-### Environment Variables and CLI Arguments
-- `--database-url`: PostgreSQL connection string (required)
-- `--log-level`: Logging level (debug, info, error) (default: info)
+### Environment Variables
+- `DATABASE_URL`: PostgreSQL connection string (required)
+- `LOG_LEVEL`: Logging level (debug, info, error) (default: info)
+- `GCP_SERVICE_ACCOUNT`: Google Cloud service account credentials (optional, for GCS)
 
 ### GCS Authentication
+
 For Google Cloud Storage, choose one method:
-1. Set the `GCP_SERVICE_ACCOUNT` environment variable with base64-encoded service account credentials
-2. Use default credentials (e.g., GKE Workload Identity)
+
+1.  Set the `GCP_SERVICE_ACCOUNT` environment variable with base64-encoded service account credentials.
+2.  Use default credentials (e.g., GKE Workload Identity).
 
 ## Running the Server
 
-### Development Mode
+### Debug with MCP Inspector
+
 ```bash
-npm run dev
+make debug
+```
+
+### Development Mode
+
+```bash
+make dev
 ```
 
 ### Production Mode
+
 ```bash
 npm run build
 npm start
 ```
 
-### Example Configurations
-
-```bash
-npm start -- --database-url "postgresql://user:password@localhost:5432/mydb"
-```
-
 ## Available Tools
 
 ### Database Tools
-- `sql_query_read`: Execute SELECT queries
-- `sql_query_create`: Execute CREATE/INSERT statements
-- `sql_query_update`: Execute UPDATE statements
-- `sql_query_delete`: Execute DELETE statements
+
+-   `sql_query_read`: Execute SELECT queries
+-   `sql_query_create`: Execute CREATE/INSERT statements
+-   `sql_query_update`: Execute UPDATE statements
+-   `sql_query_delete`: Execute DELETE statements
 
 ### DuckDB Tools
-- `duckdb_read_parquet_files`: Query Parquet files
 
-## Documentation
-
-Additional documentation can be found in the `docs/` directory:
-- `docs/llm-full.md`: Comprehensive documentation
-- `docs/requirements-mcp.md`: MCP requirements
-- `docs/sdk.md`: SDK-related documentation
+-   `duckdb_read_parquet_files`: Query Parquet files
 
 ## Development: Integrating a New Tool
 
-To integrate a new tool into an MCP server, follow these key steps:
+To integrate a new tool into the MCP server, follow these steps:
 
-### 1. Import Required Modules
+### 1. Define the Tool
 
-```typescript
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  Tool,
-} from "@modelcontextprotocol/sdk/types.js";
-```
+Create a new tool definition in the `src/tools` directory. You can organize tools into subdirectories based on their functionality (e.g., `src/tools/sql`, `src/tools/duckdb`).
 
-### 2. Define Tool Interfaces and Definitions
+For example, to create a new SQL tool, you might create a file named `src/tools/sql/my_new_tool.ts` with the following content:
 
 ```typescript
-// Define an interface for tool arguments
-interface MyToolArgs {
-  param1: string;
-  param2?: number;
+// src/tools/sql/my_new_tool.ts
+import { Tool } from "@modelcontextprotocol/sdk/types";
+
+export interface MyNewToolArgs {
+    query: string;
 }
 
-// Create a tool definition with input schema
-const myCustomTool: Tool = {
-  name: "my_custom_tool",
-  description: "A description of what the tool does",
-  inputSchema: {
-    type: "object",
-    properties: {
-      param1: {
-        type: "string",
-        description: "Description of param1"
-      },
-      param2: {
-        type: "number",
-        description: "Optional description of param2"
-      }
+export const myNewTool: Tool = {
+    name: "sql_my_new_tool",
+    description: "Executes a custom SQL query",
+    inputSchema: {
+        type: "object",
+        properties: {
+            query: {
+                type: "string",
+                description: "The SQL query to execute",
+            },
+        },
+        required: ["query"],
     },
-    required: ["param1"]
-  }
 };
 ```
 
-### 3. Set Up Server with Request Handlers
+### 2. Implement the Tool Handler
+
+Implement the tool's logic in `src/handlers.ts`. This involves creating a handler function that processes the tool's arguments and performs the desired action.
 
 ```typescript
-const server = new Server(
-  {
-    name: "My MCP Server",
-    version: "1.0.0"
-  },
-  {
-    capabilities: {
-      tools: {}
-    }
-  }
-);
+// src/handlers.ts
+import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types";
+import { myNewTool, MyNewToolArgs } from "./tools/sql/my_new_tool";
+import { Pool } from 'pg';
 
-// Handle tool calls
-server.setRequestHandler(
-  CallToolRequestSchema,
-  async (request) => {
+export function createToolHandlers(pgPool: Pool | null) {
+  return async (request: any) => {
     switch (request.params.name) {
-      case "my_custom_tool": {
-        const args = request.params.arguments as MyToolArgs;
-        // Implement tool logic here
+      case "sql_my_new_tool": {
+        if (!pgPool) {
+          throw new Error("PostgreSQL is not configured");
+        }
+        const args = request.params.arguments as MyNewToolArgs;
+        const result = await pgPool.query(args.query);
         return {
-          content: [{ 
-            type: "text", 
-            text: JSON.stringify({ result: "Tool execution result" }) 
-          }]
+          content: [{ type: "text", text: JSON.stringify(result.rows) }],
         };
       }
       default:
         throw new Error(`Unknown tool: ${request.params.name}`);
     }
-  }
-);
+  };
+}
+```
 
-// List available tools
-server.setRequestHandler(
-  ListToolsRequestSchema, 
-  async () => ({
-    tools: [myCustomTool]
-  })
-);
+### 3. Register the Tool
 
-// Connect server to transport
-const transport = new StdioServerTransport();
-await server.connect(transport);
+Register the new tool in `src/tools/index.ts` to make it available to the MCP server.
+
+```typescript
+// src/tools/index.ts
+import { Tool } from "@modelcontextprotocol/sdk/types";
+import { sqlRead } from "./sql/read";
+import { sqlCreate } from "./sql/create";
+import { sqlUpdate } from "./sql/update";
+import { sqlDelete } from "./sql/delete";
+import { duckdbReadParquetFiles } from "./duckdb/read";
+import { myNewTool } from "./sql/my_new_tool"; // Import the new tool
+
+export const tools: Tool[] = [
+  sqlRead,
+  sqlCreate,
+  sqlUpdate,
+  sqlDelete,
+  duckdbReadParquetFiles,
+  myNewTool, // Add the new tool to the list
+];
 ```
 
 ### Best Practices
 
-- Always define clear input schemas for your tools
-- Handle errors gracefully
-- Use TypeScript for type safety
-- Implement comprehensive logging
-- Validate input arguments before processing
+-   Always define clear input schemas for your tools using TypeScript interfaces and the `inputSchema` property.
+-   Handle errors gracefully and provide informative error messages.
+-   Use TypeScript for type safety throughout your tool implementation.
+-   Implement comprehensive logging to aid in debugging and monitoring.
+-   Validate input arguments before processing to prevent unexpected behavior.
+-   Refer to the existing tools in `src/tools` for examples of well-defined tools.
+-   Implement tool handlers in `src/handlers.ts` to keep the server logic organized.
 
 ### Environment Variables
 
-Sensitive information like API keys should be passed via environment variables:
-
-```bash
-TOOL_API_KEY=your_secret_key npm start
+Sensitive information, such as API keys and database credentials, should be passed via environment variables. Use the `dotenv` package to load environment variables from a `.env` file.

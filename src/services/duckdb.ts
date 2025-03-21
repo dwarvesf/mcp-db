@@ -43,4 +43,4 @@ export async function setupDuckDB(): Promise<DuckDBConnection> {
   });
 
   return conn;
-} 
+}

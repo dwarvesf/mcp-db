@@ -4,16 +4,15 @@ import { ListToolsRequestSchema, CallToolRequestSchema, ListResourcesRequestSche
 import arg from 'arg';
 import { Pool } from 'pg';
 
-import { setupPostgres } from './postgres.js';
-import { setupDuckDB } from './duckdb.js';
-import { setupGCS } from './gcs.js';
+import { setupPostgres } from './services/postgres.js';
+import { setupDuckDB } from './services/duckdb.js';
+import { setupGCS } from './services/gcs.js';
 import { validateConfig } from './config.js';
 import { tools } from './tools/index.js';
 import { createToolHandlers } from './handlers.js';
 
 // Command line argument parsing with validation
 const args = arg({
-  '--database-url': String,
   '--log-level': String,
 });
 
@@ -88,4 +87,4 @@ async function main() {
 main().catch((error: unknown) => {
   console.error("Fatal error in main():", error);
   process.exit(1);
-}); 
+});
