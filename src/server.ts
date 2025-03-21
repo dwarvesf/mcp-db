@@ -9,11 +9,14 @@ import { setupDuckDB } from './services/duckdb.js';
 import { setupGCS } from './services/gcs.js';
 import { validateConfig } from './config.js';
 import { tools } from './tools/index.js';
-import { createToolHandlers } from './handlers.js';
+import { resources } from './resources/index.js';
+import { createToolHandlers, createResourceHandlers } from './handlers.js';
+import { formatSuccessResponse, formatErrorResponse } from './utils.js';
 
 // Command line argument parsing with validation
 const args = arg({
   '--log-level': String,
+  '--gcs-bucket': String,
 });
 
 // Initialize the MCP server with proper capabilities
@@ -58,6 +61,14 @@ async function main() {
 
     // Register tool handlers
     server.setRequestHandler(CallToolRequestSchema, createToolHandlers(pgPool, duckDBConn));
+
+    // Register resource handlers
+    server.setRequestHandler(ListResourcesRequestSchema, async () => {
+      console.error("Received ListResourcesRequest");
+      return { resources };
+    });
+
+    server.setRequestHandler(ReadResourceRequestSchema, createResourceHandlers(pgPool, gcs, config.gcsBucket));
 
     // Start the server
     const transport = new StdioServerTransport();

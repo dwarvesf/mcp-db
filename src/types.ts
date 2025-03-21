@@ -1,4 +1,3 @@
-import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { QueryResult } from 'pg';
 
 export interface SQLQueryArgs {
