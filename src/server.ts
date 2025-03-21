@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { ListToolsRequestSchema, CallToolRequestSchema, ListResourcesRequestSchema, ReadResourceRequestSchema } from "@modelcontextprotocol/sdk/types.js";
@@ -17,7 +18,34 @@ import { formatSuccessResponse, formatErrorResponse } from './utils.js';
 const args = arg({
   '--log-level': String,
   '--gcs-bucket': String,
+  '--help': Boolean,
+  '-h': '--help',
+  '--version': Boolean,
+  '-v': '--version',
 });
+
+// Display version information
+if (args['--version']) {
+  console.log(`mcp-db v${process.env.npm_package_version || '1.0.0'}`);
+  process.exit(0);
+}
+
+// Display help information
+if (args['--help']) {
+  console.log(`
+  mcp-db - MCP server for database and parquet file operations
+
+  Usage:
+    npx github:dwarvesf/mcp-db [options]
+
+  Options:
+    --log-level=LEVEL     Set the logging level
+    --gcs-bucket=BUCKET   Specify the Google Cloud Storage bucket
+    -v, --version         Show version information
+    -h, --help            Show this help message
+  `);
+  process.exit(0);
+}
 
 // Initialize the MCP server with proper capabilities
 const server = new Server({

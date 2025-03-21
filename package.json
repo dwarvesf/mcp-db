@@ -4,8 +4,11 @@
   "description": "MCP server for database and parquet file operations",
   "type": "module",
   "main": "dist/server.js",
+  "bin": {
+    "mcp-db": "dist/server.js"
+  },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && chmod +x dist/server.js",
     "start": "node dist/server.js",
     "dev": "NODE_OPTIONS=\"--loader ts-node/esm\" node src/server.ts"
   },

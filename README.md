@@ -94,6 +94,26 @@ npm run build
 npm start
 ```
 
+### Running with npx from GitHub
+
+You can run the server directly using npx without cloning the repository:
+
+```bash
+npx github:dwarvesf/mcp-db
+```
+
+With options:
+
+```bash
+npx github:dwarvesf/mcp-db --log-level=debug --gcs-bucket=my-bucket
+```
+
+This will download and execute the package directly from GitHub. Note that you'll still need to provide any required environment variables:
+
+```bash
+DATABASE_URL=postgres://user:password@localhost:5432/db npx github:dwarvesf/mcp-db
+```
+
 ## Available Tools
 
 ### Database Tools
