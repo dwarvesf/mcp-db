@@ -102,6 +102,12 @@ You can run the server directly using npx without cloning the repository:
 npx github:dwarvesf/mcp-db
 ```
 
+If you encounter any issues with the above command, you can use the full GitHub URL:
+
+```bash
+npx https://github.com/dwarvesf/mcp-db.git
+```
+
 With options:
 
 ```bash
