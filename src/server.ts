@@ -16,6 +16,7 @@ import { formatSuccessResponse, formatErrorResponse } from './utils.js';
 // Command line argument parsing with validation
 const args = arg({
   '--log-level': String,
+  '--gcs-bucket': String,
 });
 
 // Initialize the MCP server with proper capabilities
@@ -95,6 +96,27 @@ async function main() {
               contents: [{
                 uri: request.params.uri,
                 text: JSON.stringify(result.rows, null, 2)
+              }]
+            };
+          }
+          case "mcp://gcs/objects": {
+            if (!gcs) {
+              throw new Error("GCS not initialized");
+            }
+            if (!config.gcsBucket) {
+              throw new Error("GCS bucket not configured. Use --gcs-bucket argument or GCS_BUCKET environment variable");
+            }
+
+            const [files] = await gcs.bucket(config.gcsBucket).getFiles();
+            const bucketContents = files.map(file => ({
+              name: file.name,
+              updated: file.metadata.updated
+            }));
+
+            return {
+              contents: [{
+                uri: request.params.uri,
+                text: JSON.stringify(bucketContents, null, 2)
               }]
             };
           }

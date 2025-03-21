@@ -6,12 +6,14 @@ config();
 
 const ConfigSchema = z.object({
   databaseUrl: z.string().url(),
-  logLevel: z.enum(['debug', 'info', 'error']).default('info')
+  logLevel: z.enum(['debug', 'info', 'error']).default('info'),
+  gcsBucket: z.string().optional()
 });
 
 export function validateConfig(args: any) {
   const databaseUrl = process.env.DATABASE_URL;
   const logLevel = args['--log-level'] || process.env.LOG_LEVEL;
+  const gcsBucket = args['--gcs-bucket'] || process.env.GCS_BUCKET;
 
   if (!databaseUrl) {
     throw new Error('DATABASE_URL environment variable must be provided in .env file');
@@ -19,6 +21,7 @@ export function validateConfig(args: any) {
 
   return ConfigSchema.parse({
     databaseUrl,
-    logLevel: logLevel || 'info'
+    logLevel: logLevel || 'info',
+    gcsBucket
   });
 }
