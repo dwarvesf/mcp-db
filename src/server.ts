@@ -1,19 +1,18 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { ListToolsRequestSchema, CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import { ListToolsRequestSchema, CallToolRequestSchema, ListResourcesRequestSchema, ReadResourceRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import arg from 'arg';
 import { Pool } from 'pg';
 
-import { setupPostgres } from './postgres.js';
-import { setupDuckDB } from './duckdb.js';
-import { setupGCS } from './gcs.js';
+import { setupPostgres } from './services/postgres.js';
+import { setupDuckDB } from './services/duckdb.js';
+import { setupGCS } from './services/gcs.js';
 import { validateConfig } from './config.js';
-import { tools } from './tools.js';
+import { tools } from './tools/index.js';
 import { createToolHandlers } from './handlers.js';
 
 // Command line argument parsing with validation
 const args = arg({
-  '--database-url': String,
   '--log-level': String,
 });
 
@@ -88,4 +87,4 @@ async function main() {
 main().catch((error: unknown) => {
   console.error("Fatal error in main():", error);
   process.exit(1);
-}); 
+});

@@ -1,18 +1,24 @@
 import { z } from 'zod';
+import { config } from 'dotenv';
+
+// Load environment variables from .env file
+config();
 
 const ConfigSchema = z.object({
-  databaseUrl: z.string().url().optional(),
+  databaseUrl: z.string().url(),
   logLevel: z.enum(['debug', 'info', 'error']).default('info')
 });
 
 export function validateConfig(args: any) {
-  // Validate that either database or parquet sources are provided
-  if (!args['--database-url']) {
-    throw new Error('Must provide either --database-url');
+  const databaseUrl = process.env.DATABASE_URL;
+  const logLevel = args['--log-level'] || process.env.LOG_LEVEL;
+
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL environment variable must be provided in .env file');
   }
 
   return ConfigSchema.parse({
-    databaseUrl: args['--database-url'],
-    logLevel: args['--log-level'] || 'info'
+    databaseUrl,
+    logLevel: logLevel || 'info'
   });
-} 
+}

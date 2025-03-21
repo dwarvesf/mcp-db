@@ -12,4 +12,4 @@ export async function setupGCS(): Promise<Storage> {
   
   // Use default credentials
   return new Storage();
-} 
+}

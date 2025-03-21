@@ -17,4 +17,4 @@ export async function setupPostgres(connectionString: string) {
   }
 
   return pool;
-} 
+}
