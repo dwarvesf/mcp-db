@@ -13,27 +13,26 @@ A Model Context Protocol (MCP) server that provides tools for interacting with d
 
 ```plaintext
 .
-├── Makefile
-├── README.md
-├── docker-compose.yml
-├── docs
-│   ├── llm-full.md
-│   ├── requirements-mcp.md
-│   └── sdk.md
 ├── migrations
 │   └── init.sql
-├── package-lock.json
-├── package.json
 ├── src
+│   ├── tools
+│   │   ├── duckdb
+│   │   ├── sql
+│   │   └── index.ts
 │   ├── config.ts
 │   ├── duckdb.ts
 │   ├── gcs.ts
 │   ├── handlers.ts
 │   ├── postgres.ts
 │   ├── server.ts
-│   ├── tools.ts
 │   ├── types.ts
 │   └── utils.ts
+├── Makefile
+├── README.md
+├── docker-compose.yml
+├── package-lock.json
+├── package.json
 └── tsconfig.json
 ```
 
