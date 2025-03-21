@@ -5,7 +5,7 @@ import { config } from 'dotenv';
 config();
 
 const ConfigSchema = z.object({
-  databaseUrl: z.string().url(),
+  databaseUrl: z.string().url().optional(),
   logLevel: z.enum(['debug', 'info', 'error']).default('info'),
   gcsBucket: z.string().optional()
 });
@@ -15,13 +15,36 @@ export function validateConfig(args: any) {
   const logLevel = args['--log-level'] || process.env.LOG_LEVEL;
   const gcsBucket = args['--gcs-bucket'] || process.env.GCS_BUCKET;
 
-  if (!databaseUrl) {
-    throw new Error('DATABASE_URL environment variable must be provided in .env file');
+  // Check if we're running in supergateway (it sets specific environment variables)
+  const isInSupergateway = process.env.SUPERGATEWAY_PORT || process.env.SUPERGATEWAY_SSE_PATH;
+
+  // Only require DATABASE_URL if not in supergateway
+  if (!databaseUrl && !isInSupergateway) {
+    console.error('\nConfiguration Error:');
+    console.error('DATABASE_URL environment variable is required.');
+    console.error('\nTo fix this, either:');
+    console.error('1. Set the environment variable:');
+    console.error('   export DATABASE_URL="postgresql://user:password@localhost:5432/mydb"');
+    console.error('\n2. Or create a .env file with:');
+    console.error('   DATABASE_URL=postgresql://user:password@localhost:5432/mydb');
+    console.error('\n3. Or run with supergateway to skip database features\n');
+    throw new Error('DATABASE_URL environment variable is required');
   }
 
-  return ConfigSchema.parse({
-    databaseUrl,
-    logLevel: logLevel || 'info',
-    gcsBucket
-  });
+  try {
+    return ConfigSchema.parse({
+      databaseUrl,
+      logLevel: logLevel || 'info',
+      gcsBucket
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      console.error('\nConfiguration Validation Errors:');
+      error.errors.forEach(err => {
+        console.error(`- ${err.path.join('.')}: ${err.message}`);
+      });
+      console.error();
+    }
+    throw error;
+  }
 }

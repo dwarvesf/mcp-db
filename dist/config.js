@@ -11,16 +11,35 @@ export function validateConfig(args) {
     const databaseUrl = process.env.DATABASE_URL;
     const logLevel = args['--log-level'] || process.env.LOG_LEVEL;
     const gcsBucket = args['--gcs-bucket'] || process.env.GCS_BUCKET;
-    // If neither database nor GCS features are configured, show usage
-    if (!databaseUrl && !gcsBucket) {
-        console.error('Error: No features are configured. You must provide at least one of:');
-        console.error('- DATABASE_URL environment variable for database features');
-        console.error('- --gcs-bucket flag or GCS_BUCKET environment variable for GCS features');
-        process.exit(1);
+    // Check if we're running in supergateway (it sets specific environment variables)
+    const isInSupergateway = process.env.SUPERGATEWAY_PORT || process.env.SUPERGATEWAY_SSE_PATH;
+    // Only require DATABASE_URL if not in supergateway
+    if (!databaseUrl && !isInSupergateway) {
+        console.error('\nConfiguration Error:');
+        console.error('DATABASE_URL environment variable is required.');
+        console.error('\nTo fix this, either:');
+        console.error('1. Set the environment variable:');
+        console.error('   export DATABASE_URL="postgresql://user:password@localhost:5432/mydb"');
+        console.error('\n2. Or create a .env file with:');
+        console.error('   DATABASE_URL=postgresql://user:password@localhost:5432/mydb');
+        console.error('\n3. Or run with supergateway to skip database features\n');
+        throw new Error('DATABASE_URL environment variable is required');
     }
-    return ConfigSchema.parse({
-        databaseUrl,
-        logLevel: logLevel || 'info',
-        gcsBucket
-    });
+    try {
+        return ConfigSchema.parse({
+            databaseUrl,
+            logLevel: logLevel || 'info',
+            gcsBucket
+        });
+    }
+    catch (error) {
+        if (error instanceof z.ZodError) {
+            console.error('\nConfiguration Validation Errors:');
+            error.errors.forEach(err => {
+                console.error(`- ${err.path.join('.')}: ${err.message}`);
+            });
+            console.error();
+        }
+        throw error;
+    }
 }
