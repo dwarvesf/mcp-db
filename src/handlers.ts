@@ -5,6 +5,9 @@ import { formatErrorResponse, formatSuccessResponse } from './utils.js';
 import { SQLQueryArgs, DuckDBQueryArgs } from './types.js';
 import { handleDuckDBQuery } from './tools/duckdb/handler.js';
 import { handlePostgreSQLQuery } from './tools/sql/handler.js';
+import { handleSQLTablesResource } from './resources/sql/handler.js';
+import { handleGCSObjectsResource } from './resources/gcs/handler.js';
+import { Storage } from '@google-cloud/storage';
 
 type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
 
@@ -46,6 +49,47 @@ export function createToolHandlers(pgPool: Pool | null, duckDBConn: DuckDBConnec
 
         default:
           throw new Error(`Unknown tool: ${request.params.name}`);
+      }
+    } catch (error) {
+      return formatErrorResponse(error);
+    }
+  };
+}
+
+export function createResourceHandlers(pgPool: Pool | null, gcs: Storage | null, gcsBucket: string | undefined) {
+  return async (request: any) => {
+    console.error(`Received resource request for ${request.params.uri}`);
+
+    try {
+      switch (request.params.uri) {
+        case "mcp://db/tables": {
+          if (!pgPool) {
+            throw new Error("PostgreSQL connection not initialized");
+          }
+          const result = await handleSQLTablesResource(pgPool);
+          return {
+            contents: [{
+              uri: request.params.uri,
+              text: JSON.stringify(result, null, 2)
+            }]
+          };
+        }
+
+        case "mcp://gcs/objects": {
+          if (!gcs || !gcsBucket) {
+            throw new Error("GCS not properly configured");
+          }
+          const result = await handleGCSObjectsResource(gcs, gcsBucket);
+          return {
+            contents: [{
+              uri: request.params.uri,
+              text: JSON.stringify(result, null, 2)
+            }]
+          };
+        }
+
+        default:
+          throw new Error(`Unknown resource URI: ${request.params.uri}`);
       }
     } catch (error) {
       return formatErrorResponse(error);

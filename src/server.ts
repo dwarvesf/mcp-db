@@ -10,7 +10,7 @@ import { setupGCS } from './services/gcs.js';
 import { validateConfig } from './config.js';
 import { tools } from './tools/index.js';
 import { resources } from './resources/index.js';
-import { createToolHandlers } from './handlers.js';
+import { createToolHandlers, createResourceHandlers } from './handlers.js';
 import { formatSuccessResponse, formatErrorResponse } from './utils.js';
 
 // Command line argument parsing with validation
@@ -68,65 +68,7 @@ async function main() {
       return { resources };
     });
 
-    server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-      console.error(`Received ReadResourceRequest for ${request.params.uri}`);
-      
-      if (!pgPool) {
-        throw new Error("PostgreSQL connection not initialized");
-      }
-
-      try {
-        switch (request.params.uri) {
-          case "mcp://db/tables": {
-            const result = await pgPool.query(`
-              SELECT 
-                table_schema as schema_name,
-                table_name,
-                json_agg(json_build_object(
-                  'column_name', column_name,
-                  'data_type', data_type,
-                  'is_nullable', is_nullable = 'YES'
-                )) as columns
-              FROM information_schema.columns
-              WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
-              GROUP BY table_schema, table_name
-              ORDER BY table_schema, table_name;
-            `);
-            return {
-              contents: [{
-                uri: request.params.uri,
-                text: JSON.stringify(result.rows, null, 2)
-              }]
-            };
-          }
-          case "mcp://gcs/objects": {
-            if (!gcs) {
-              throw new Error("GCS not initialized");
-            }
-            if (!config.gcsBucket) {
-              throw new Error("GCS bucket not configured. Use --gcs-bucket argument or GCS_BUCKET environment variable");
-            }
-
-            const [files] = await gcs.bucket(config.gcsBucket).getFiles();
-            const bucketContents = files.map(file => ({
-              name: file.name,
-              updated: file.metadata.updated
-            }));
-
-            return {
-              contents: [{
-                uri: request.params.uri,
-                text: JSON.stringify(bucketContents, null, 2)
-              }]
-            };
-          }
-          default:
-            throw new Error(`Unknown resource URI: ${request.params.uri}`);
-        }
-      } catch (error) {
-        return formatErrorResponse(error);
-      }
-    });
+    server.setRequestHandler(ReadResourceRequestSchema, createResourceHandlers(pgPool, gcs, config.gcsBucket));
 
     // Start the server
     const transport = new StdioServerTransport();

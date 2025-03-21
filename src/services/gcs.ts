@@ -4,6 +4,7 @@ export async function setupGCS(): Promise<Storage> {
   // Check for service account credentials
   const serviceAccount = process.env.GCP_SERVICE_ACCOUNT;
   if (serviceAccount) {
+    console.error("Using GCP service account credentials", Buffer.from(serviceAccount, 'base64').toString());
     const credentials = JSON.parse(
       Buffer.from(serviceAccount, 'base64').toString()
     );
