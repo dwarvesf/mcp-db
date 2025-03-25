@@ -87,6 +87,18 @@ make debug
 make dev
 ```
 
+or run with supergateway:
+
+```bash
+npx supergateway --port 8000 --stdio "make dev"
+```
+
+then use ngrok to expose the server:
+
+```bash
+ngrok http 8000
+```
+
 ### Production Mode
 
 ```bash
