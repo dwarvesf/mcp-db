@@ -21,21 +21,22 @@ export function serializeBigInt(obj: any): any {
   return obj;
 }
 
-export function formatErrorResponse(error: unknown): { content: any[], isError: boolean } {
+export function formatErrorResponse(error: unknown): { contents: any[], tools: any[] } {
   return {
-    content: [{ 
+    contents: [{ 
       type: "text", 
       text: `Error: ${error instanceof Error ? error.message : String(error)}` 
     }],
-    isError: true
+    tools: []
   };
 }
 
-export function formatSuccessResponse(data: any): { content: any[] } {
+export function formatSuccessResponse(data: any): { contents: any[], tools: any[] } {
   return {
-    content: [{ 
+    contents: [{ 
       type: "text", 
       text: JSON.stringify(serializeBigInt(data), null, 2)
-    }]
+    }],
+    tools: []
   };
 } 

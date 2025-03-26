@@ -8,8 +8,20 @@ import { handlePostgreSQLQuery } from './tools/sql/handler.js';
 import { handleSQLTablesResource } from './resources/sql/handler.js';
 import { handleGCSObjectsResource } from './resources/gcs/handler.js';
 import { Storage } from '@google-cloud/storage';
+import { ServerResult } from '@modelcontextprotocol/sdk/types.js';
 
 type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
+
+interface ResourceRequest {
+  params: {
+    uri: string;
+  };
+}
+
+interface Resource {
+  uri: string;
+  content: any;
+}
 
 export function createToolHandlers(pgPool: Pool | null, duckDBConn: DuckDBConnection | null) {
   return async (request: any) => {
@@ -57,40 +69,51 @@ export function createToolHandlers(pgPool: Pool | null, duckDBConn: DuckDBConnec
 }
 
 export function createResourceHandlers(pgPool: Pool | null, gcs: Storage | null, gcsBucket: string | undefined) {
-  return async (request: any) => {
+  return async (request: ResourceRequest): Promise<ServerResult> => {
     console.error(`Received resource request for ${request.params.uri}`);
 
     try {
-      switch (request.params.uri) {
-        case "mcp://db/tables": {
-          if (!pgPool) {
-            throw new Error("PostgreSQL connection not initialized");
-          }
-          const result = await handleSQLTablesResource(pgPool);
-          return {
-            contents: [{
-              uri: request.params.uri,
-              text: JSON.stringify(result, null, 2)
-            }]
-          };
+      const uri = request.params.uri;
+      
+      // Handle postgres:// URIs
+      if (uri.startsWith('postgres://')) {
+        if (!pgPool) {
+          throw new Error("PostgreSQL connection not initialized");
         }
-
-        case "mcp://gcs/objects": {
-          if (!gcs || !gcsBucket) {
-            throw new Error("GCS not properly configured");
-          }
-          const result = await handleGCSObjectsResource(gcs, gcsBucket);
-          return {
-            contents: [{
-              uri: request.params.uri,
-              text: JSON.stringify(result, null, 2)
-            }]
-          };
+        const result = await handleSQLTablesResource(pgPool);
+        const resource = result.find((r: Resource) => r.uri === uri);
+        if (!resource) {
+          throw new Error(`Resource not found: ${uri}`);
         }
-
-        default:
-          throw new Error(`Unknown resource URI: ${request.params.uri}`);
+        return {
+          contents: [{
+            uri: resource.uri,
+            text: JSON.stringify(resource.content, null, 2)
+          }],
+          tools: []
+        };
       }
+
+      // Handle gcs:// URIs
+      if (uri.startsWith('gcs://')) {
+        if (!gcs || !gcsBucket) {
+          throw new Error("GCS not properly configured");
+        }
+        const result = await handleGCSObjectsResource(gcs, gcsBucket);
+        const resource = result.find((r: Resource) => r.uri === uri);
+        if (!resource) {
+          throw new Error(`Resource not found: ${uri}`);
+        }
+        return {
+          contents: [{
+            uri: resource.uri,
+            text: JSON.stringify(resource.content, null, 2)
+          }],
+          tools: []
+        };
+      }
+
+      throw new Error(`Unknown resource URI scheme: ${uri}`);
     } catch (error) {
       return formatErrorResponse(error);
     }

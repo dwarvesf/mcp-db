@@ -13,6 +13,7 @@ import { tools } from './tools/index.js';
 import { resources } from './resources/index.js';
 import { createToolHandlers, createResourceHandlers } from './handlers.js';
 import { formatSuccessResponse, formatErrorResponse } from './utils.js';
+import { handleGCSObjectsResource } from './resources/gcs/handler.js';
 
 // Command line argument parsing with validation
 const args = arg({
@@ -127,7 +128,26 @@ export async function main(): Promise<void> {
     // Register resource handlers
     server.setRequestHandler(ListResourcesRequestSchema, async () => {
       console.error("Received ListResourcesRequest");
-      return { resources };
+      
+      let allResources = [...resources];
+      
+      // Add GCS resources if GCS is configured
+      if (gcs && config.gcsBucket) {
+        try {
+          const gcsResources = await handleGCSObjectsResource(gcs, config.gcsBucket);
+          // Map GCS resources to MCP resource format
+          const mcpGcsResources = gcsResources.map(r => ({
+            uri: r.uri,
+            name: r.name,
+            description: r.description
+          }));
+          allResources = allResources.concat(mcpGcsResources);
+        } catch (error) {
+          console.error("Error fetching GCS resources:", error);
+        }
+      }
+
+      return { resources: allResources };
     });
 
     server.setRequestHandler(ReadResourceRequestSchema, createResourceHandlers(pgPool, gcs, config.gcsBucket));

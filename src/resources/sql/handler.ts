@@ -1,9 +1,30 @@
 import { Pool } from 'pg';
 
-export async function handleSQLTablesResource(pool: Pool) {
+interface TableColumn {
+  column_name: string;
+  data_type: string;
+  is_nullable: boolean;
+}
+
+interface TableResource {
+  uri: string;
+  name: string;
+  description: string;
+  content: {
+    schema_name: string;
+    table_name: string;
+    columns: TableColumn[];
+  };
+}
+
+export async function handleSQLTablesResource(pool: Pool): Promise<TableResource[]> {
   if (!pool) {
     throw new Error("PostgreSQL connection not initialized");
   }
+
+  // First get the database name
+  const dbResult = await pool.query('SELECT current_database() as dbname');
+  const dbName = dbResult.rows[0].dbname;
 
   const result = await pool.query(`
     SELECT 
@@ -20,5 +41,15 @@ export async function handleSQLTablesResource(pool: Pool) {
     ORDER BY table_schema, table_name;
   `);
 
-  return result.rows;
+  // Transform each table into a resource with postgres:// URI
+  return result.rows.map(row => ({
+    uri: `postgres://${dbName}/${row.schema_name}.${row.table_name}/schema`,
+    name: `${row.schema_name}.${row.table_name}`,
+    description: `Schema for table ${row.schema_name}.${row.table_name}`,
+    content: {
+      schema_name: row.schema_name,
+      table_name: row.table_name,
+      columns: row.columns
+    }
+  }));
 } 
