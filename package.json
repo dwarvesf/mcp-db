@@ -44,11 +44,15 @@
   "homepage": "https://github.com/dwarvesf/mcp-db#readme",
   "dependencies": {
     "@google-cloud/storage": "^7.7.0",
-    "@modelcontextprotocol/sdk": "^1.7.0",
+    "@modelcontextprotocol/sdk": "^1.8.0",
+    "@types/cors": "^2.8.17",
     "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.1",
     "arg": "^5.0.2",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "duckdb": "^0.10.0",
+    "express": "^5.0.1",
     "pg": "^8.11.3",
     "typescript": "^5.3.3",
     "zod": "^3.22.4"

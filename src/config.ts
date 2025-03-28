@@ -7,13 +7,19 @@ config();
 const ConfigSchema = z.object({
   databaseUrl: z.string().url().optional(),
   logLevel: z.enum(['debug', 'info', 'error']).default('info'),
-  gcsBucket: z.string().optional()
+  gcsBucket: z.string().optional(),
+  transport: z.enum(['stdio', 'sse']).default('stdio'),
+  port: z.number().min(1).max(65535).default(3001),
+  host: z.string().default('localhost')
 });
 
 export function validateConfig(args: any) {
   const databaseUrl = process.env.DATABASE_URL;
   const logLevel = args['--log-level'] || process.env.LOG_LEVEL;
   const gcsBucket = args['--gcs-bucket'] || process.env.GCS_BUCKET;
+  const transport = args['--transport'] || process.env.TRANSPORT || 'stdio';
+  const port = args['--port'] || parseInt(process.env.PORT || '3001', 10);
+  const host = args['--host'] || process.env.HOST || 'localhost';
 
   // Check if we're running in supergateway (it sets specific environment variables)
   const isInSupergateway = process.env.SUPERGATEWAY_PORT || process.env.SUPERGATEWAY_SSE_PATH;
@@ -35,7 +41,10 @@ export function validateConfig(args: any) {
     return ConfigSchema.parse({
       databaseUrl,
       logLevel: logLevel || 'info',
-      gcsBucket
+      gcsBucket,
+      transport,
+      port,
+      host
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

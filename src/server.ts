@@ -13,6 +13,7 @@ import { tools } from './tools/index.js';
 import { resources } from './resources/index.js';
 import { createToolHandlers, createResourceHandlers } from './handlers.js';
 import { formatSuccessResponse, formatErrorResponse } from './utils.js';
+import { SSETransport } from './transports/sse.js';
 
 // Command line argument parsing with validation
 const args = arg({
@@ -23,6 +24,9 @@ const args = arg({
   '--version': Boolean,
   '-v': '--version',
   '--no-color': Boolean,
+  '--transport': String,
+  '--port': Number,
+  '--host': String,
 });
 
 // Enable colors by default
@@ -48,6 +52,9 @@ if (args['--help']) {
     --log-level=LEVEL     Set the logging level (debug, info, error)
     --gcs-bucket=BUCKET   Specify the Google Cloud Storage bucket
     --no-color           Disable colored output
+    --transport=TYPE     Transport type (stdio or sse) (default: stdio)
+    --port=PORT         HTTP server port (default: 3001)
+    --host=HOST         HTTP server host (default: localhost)
     -v, --version         Show version information
     -h, --help            Show this help message
 
@@ -133,10 +140,21 @@ export async function main(): Promise<void> {
     server.setRequestHandler(ReadResourceRequestSchema, createResourceHandlers(pgPool, gcs, config.gcsBucket));
     console.error(`Registered ${resources.length} resources`);
 
-    // Start the server
-    console.error("\nStarting server on stdio transport...");
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
+    // Start the server with the appropriate transport
+    const transportType = args['--transport'] || 'stdio';
+    
+    if (transportType === 'sse') {
+      console.error("\nStarting server with SSE transport...");
+      const sseTransport = new SSETransport({
+        port: args['--port'],
+        host: args['--host']
+      });
+      await sseTransport.start(server);
+    } else {
+      console.error("\nStarting server with stdio transport...");
+      const transport = new StdioServerTransport();
+      await server.connect(transport);
+    }
 
     console.error("\nServer is ready and listening for requests");
     console.error("Press Ctrl+C to stop the server\n");
