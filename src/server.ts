@@ -128,7 +128,7 @@ export async function main(): Promise<void> {
     });
 
     // Register tool handlers
-    server.setRequestHandler(CallToolRequestSchema, createToolHandlers(pgPool, duckDBConn, gcs, config.gcsBucket));
+    server.setRequestHandler(CallToolRequestSchema, createToolHandlers(pgPool, duckDBConn));
     console.error(`Registered ${tools.length} tools`);
 
     // Register resource handlers
