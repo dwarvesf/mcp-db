@@ -9,6 +9,12 @@ export interface GCSDirectoryTreeArgs {
   offset?: number;
 }
 
+// Interface for the GCS API response
+interface GCSApiResponse {
+  prefixes?: string[];
+  nextPageToken?: string;
+}
+
 export async function handleGCSDirectoryTree(
   gcs: Storage,
   bucket: string,
@@ -37,21 +43,25 @@ export async function handleGCSDirectoryTree(
     pageToken: offset > 0 ? String(offset) : undefined,
   });
 
+  // Type assertion for the API response
+  const typedResponse = apiResponse as GCSApiResponse;
+  
   // Extract prefixes (directories) from the API response
-  const directories = apiResponse.prefixes || [];
+  const directories = typedResponse.prefixes || [];
 
   // Build the result structure
   const result = {
     files: files.map(file => ({
       name: file.name,
-      size: parseInt(file.metadata.size, 10) || 0,
-      updated: file.metadata.updated,
-      contentType: file.metadata.contentType
+      // Handle potential undefined size safely
+      size: file.metadata?.size ? parseInt(String(file.metadata.size), 10) : 0,
+      updated: file.metadata?.updated,
+      contentType: file.metadata?.contentType
     })),
     directories,
     pagination: {
       total: files.length + directories.length,
-      nextOffset: apiResponse.nextPageToken ? 
+      nextOffset: typedResponse.nextPageToken ? 
         (offset + limit) : 
         null
     }
