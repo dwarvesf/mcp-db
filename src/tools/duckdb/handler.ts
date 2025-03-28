@@ -25,13 +25,13 @@ export async function handleDuckDBQuery(
   }
 
   // Add LIMIT clause if not present
-  const modifiedQuery = addLimitToQuery(args.query);
-  if (modifiedQuery !== args.query) {
-    console.error(`Query modified to include limit: ${modifiedQuery}`);
-  }
+  // const modifiedQuery = addLimitToQuery(args.query);
+  // if (modifiedQuery !== args.query) {
+  //   console.error(`Query modified to include limit: ${modifiedQuery}`);
+  // }
 
   return new Promise((resolve, reject) => {
-    conn.all(modifiedQuery, (err, result) => {
+    conn.all(args.query, (err, result) => {
       if (err) {
         console.error("DuckDB query execution error:", err);
         reject(err);

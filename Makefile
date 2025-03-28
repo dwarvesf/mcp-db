@@ -22,7 +22,7 @@ build:
 ## Run the server in development mode
 dev:
 	npm run build
-	NODE_ENV=development npm run dev
+	NODE_ENV=development npm run dev -- --transport=sse --port=3001
 
 ## debug the server in development mode
 debug:
