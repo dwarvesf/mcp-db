@@ -2,16 +2,17 @@ import { Pool } from 'pg';
 import pkg from 'duckdb';
 const duckdb = pkg;
 import { formatErrorResponse, formatSuccessResponse } from './utils.js';
-import { SQLQueryArgs, DuckDBQueryArgs } from './types.js';
+import { SQLQueryArgs, DuckDBQueryArgs, GCSDirectoryTreeArgs } from './types.js';
 import { handleDuckDBQuery } from './tools/duckdb/handler.js';
 import { handlePostgreSQLQuery } from './tools/sql/handler.js';
+import { handleGCSDirectoryTree } from './tools/gcs/handler.js';
 import { handleSQLTablesResource } from './resources/sql/handler.js';
 import { handleGCSObjectsResource } from './resources/gcs/handler.js';
 import { Storage } from '@google-cloud/storage';
 
 type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
 
-export function createToolHandlers(pgPool: Pool | null, duckDBConn: DuckDBConnection | null) {
+export function createToolHandlers(pgPool: Pool | null, duckDBConn: DuckDBConnection | null, gcs: Storage | null, gcsBucket: string | undefined) {
   return async (request: any) => {
     console.error(`Received tool request: ${request.params.name}`);
 
@@ -24,6 +25,18 @@ export function createToolHandlers(pgPool: Pool | null, duckDBConn: DuckDBConnec
           const result = await handleDuckDBQuery(
             duckDBConn,
             request.params.arguments as DuckDBQueryArgs
+          );
+          return formatSuccessResponse(result);
+        }
+
+        case "gcs_directory_tree": {
+          if (!gcs || !gcsBucket) {
+            throw new Error("GCS not properly configured");
+          }
+          const result = await handleGCSDirectoryTree(
+            gcs,
+            gcsBucket,
+            request.params.arguments as GCSDirectoryTreeArgs
           );
           return formatSuccessResponse(result);
         }

@@ -145,6 +145,21 @@ DATABASE_URL=postgres://user:password@localhost:5432/db npx github:dwarvesf/mcp-
 
 -   `duckdb_read_parquet_files`: Query Parquet files
 
+### GCS Tools
+
+-   `gcs_directory_tree`: Fetch the directory tree structure from a GCS bucket with pagination support (limit/offset)
+    ```json
+    {
+      "name": "gcs_directory_tree",
+      "arguments": {
+        "prefix": "data/",
+        "delimiter": "/",
+        "limit": 100,
+        "offset": 0
+      }
+    }
+    ```
+
 ## Development: Integrating a New Tool
 
 To integrate a new tool into the MCP server, follow these steps:
