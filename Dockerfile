@@ -26,7 +26,10 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 # Copy package files and install production dependencies
 COPY package*.json tsconfig.json ./
 ENV NODE_ENV=production
+
+# Install production dependencies and rebuild native modules
 RUN npm ci --omit=dev --ignore-scripts && \
+    npm rebuild && \
     # Clean up build dependencies and cache
     apk del python3 make g++ && \
     npm cache clean --force
@@ -40,5 +43,6 @@ ENV LOG_LEVEL=info
 # Switch to non-root user
 USER appuser
 
-# Command to run the application
-CMD ["npm", "start"]
+# Use ENTRYPOINT and CMD to allow argument overrides
+ENTRYPOINT ["npm", "start", "--"]
+CMD []
