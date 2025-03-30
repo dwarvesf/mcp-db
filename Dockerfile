@@ -30,6 +30,7 @@ RUN npm ci --omit=dev --ignore-scripts && \
 
 # Copy built files from builder stage
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/migrations ./migrations
 RUN chown -R appuser:appgroup /app/dist
 
 # Set environment variables

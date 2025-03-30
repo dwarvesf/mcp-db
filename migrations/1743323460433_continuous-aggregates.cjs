@@ -1,16 +1,16 @@
 /* eslint-disable camelcase */
 
 /** @type {import('node-pg-migrate').ColumnDefinitions | undefined} */
-export const shorthands = undefined;
+exports.shorthands = undefined;
 
 /** @param pgm {import('node-pg-migrate').MigrationBuilder} */
-export async function up(pgm) {
+exports.up = function(pgm) {
   // Continuous aggregates are created by scripts/setup-continuous-aggregates.sql
   // This migration is just a placeholder for tracking purposes
-}
+};
 
 /** @param pgm {import('node-pg-migrate').MigrationBuilder} */
-export async function down(pgm) {
+exports.down = function(pgm) {
   // Drop continuous aggregates and their policies
   pgm.sql(`
     DROP MATERIALIZED VIEW IF EXISTS tag_trends CASCADE;
@@ -19,4 +19,4 @@ export async function down(pgm) {
     DROP MATERIALIZED VIEW IF EXISTS entity_trends CASCADE;
     DROP MATERIALIZED VIEW IF EXISTS content_trends CASCADE;
   `);
-}
+};

@@ -19,8 +19,9 @@
     "dev": "NODE_OPTIONS=\"--loader ts-node/esm\" node --experimental-specifier-resolution=node src/cli.ts",
     "debug": "mcp-inspector -- NODE_OPTIONS=\"--loader ts-node/esm\" node --experimental-specifier-resolution=node src/cli.ts",
     "migrate:create": "node-pg-migrate create",
-    "migrate:up": "node-pg-migrate up",
-    "migrate:down": "node-pg-migrate down",
+    "migrate:up": "node-pg-migrate up --migrations-dir migrations --migration-file-language js --file-extension .cjs",
+    "migrate:down": "node-pg-migrate down --migrations-dir migrations --migration-file-language js --file-extension .cjs",
+    "migrate:up:prod": "DATABASE_URL=$DATABASE_URL node-pg-migrate up --migrations-dir migrations --migration-file-language js --file-extension .cjs",
     "setup:db": "make setup-db"
   },
   "engines": {
