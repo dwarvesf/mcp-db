@@ -234,8 +234,6 @@ DATABASE_URL=postgres://user:password@localhost:5432/db npx github:dwarvesf/mcp-
 
 -   `sql_query_read`: Execute SELECT queries
 -   `sql_query_create`: Execute CREATE/INSERT statements
--   `sql_query_update`: Execute UPDATE statements
--   `sql_query_delete`: Execute DELETE statements
 
 ### DuckDB Tools
 

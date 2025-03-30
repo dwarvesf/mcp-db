@@ -42,9 +42,7 @@ export function createToolHandlers(pgPool: Pool | null, duckDBConn: DuckDBConnec
         }
 
         case "sql_query_create":
-        case "sql_query_read":
-        case "sql_query_update":
-        case "sql_query_delete": {
+        case "sql_query_read": {
           if (!pgPool) {
             throw new Error("PostgreSQL connection not initialized");
           }
