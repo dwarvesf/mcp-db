@@ -1,10 +1,16 @@
-# Makefile
+.PHONY: migrate-up migrate-down setup-continuous-aggregates setup-db
 
-# Variables
-BUILD_DIR = build
-NODE_ENV = development
+migrate-up:
+	npm run migrate:up
 
-# Targets
+migrate-down:
+	npm run migrate:down
+
+setup-continuous-aggregates:
+	docker exec -i mcp-db-timescaledb-1 psql -U postgres -d postgres -f - < scripts/setup-continuous-aggregates.sql
+
+setup-db: migrate-up setup-continuous-aggregates
+
 down:
 	docker compose down
 
@@ -20,8 +26,7 @@ build:
 	npm run build
 
 ## Run the server in development mode
-dev:
-	npm run build
+dev: migrate-up build
 	NODE_ENV=development npm run dev -- --transport=sse --port=3001
 
 ## debug the server in development mode
@@ -31,7 +36,3 @@ debug:
 ## Clean the build directory
 clean:
 	rm -rf dist
-
-.PHONY: install build dev debug clean
-
-.DEFAULT_GOAL := dev
