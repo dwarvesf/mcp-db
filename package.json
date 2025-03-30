@@ -17,7 +17,12 @@
     "build": "tsc",
     "start": "node dist/cli.js",
     "dev": "NODE_OPTIONS=\"--loader ts-node/esm\" node --experimental-specifier-resolution=node src/cli.ts",
-    "debug": "mcp-inspector -- NODE_OPTIONS=\"--loader ts-node/esm\" node --experimental-specifier-resolution=node src/cli.ts"
+    "debug": "mcp-inspector -- NODE_OPTIONS=\"--loader ts-node/esm\" node --experimental-specifier-resolution=node src/cli.ts",
+    "migrate:create": "node-pg-migrate create",
+    "migrate:up": "node-pg-migrate up --migrations-dir migrations --migration-file-language js --file-extension .cjs",
+    "migrate:down": "node-pg-migrate down --migrations-dir migrations --migration-file-language js --file-extension .cjs",
+    "migrate:up:prod": "DATABASE_URL=$DATABASE_URL node-pg-migrate up --migrations-dir migrations --migration-file-language js --file-extension .cjs",
+    "setup:db": "make setup-db"
   },
   "engines": {
     "node": ">=18"
@@ -53,7 +58,8 @@
     "dotenv": "^16.4.7",
     "duckdb": "^1.2.0",
     "express": "^5.0.1",
-    "pg": "^8.11.3",
+    "node-pg-migrate": "^7.9.1",
+    "pg": "^8.14.1",
     "typescript": "^5.3.3",
     "zod": "^3.22.4"
   },

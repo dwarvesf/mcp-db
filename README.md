@@ -14,27 +14,28 @@ A Model Context Protocol (MCP) server that provides tools for interacting with d
 ```plaintext
 .
 ├── migrations
-│   └── init.sql
+│   └── 1743322886782_initial-schema.js
 ├── src
-│   ├── resources
-│   │   ├── gcs
-│   │   ├── sql
-│   │   └── index.ts
-│   ├── services
-│   │   ├── duckdb.ts
-│   │   ├── gcs.ts
-│   │   └── postgres.ts
-│   ├── tools
-│   │   ├── duckdb
-│   │   ├── sql
-│   │   └── index.ts
-│   ├── config.ts
-│   ├── handlers.ts
-│   ├── server.ts
-│   ├── types.ts
-│   └── utils.ts
+│   ├── resources
+│   │   ├── gcs
+│   │   ├── sql
+│   │   └── index.ts
+│   ├── services
+│   │   ├── duckdb.ts
+│   │   ├── gcs.ts
+│   │   └── postgres.ts
+│   ├── tools
+│   │   ├── duckdb
+│   │   ├── sql
+│   │   └── index.ts
+│   ├── config.ts
+│   ├── handlers.ts
+│   ├── server.ts
+│   ├── types.ts
+│   └── utils.ts
 ├── Makefile
 ├── README.md
+├── database.json
 ├── docker-compose.yml
 ├── package-lock.json
 ├── package.json
@@ -72,6 +73,101 @@ For Google Cloud Storage, choose one method:
 
 1.  Set the `GCP_SERVICE_ACCOUNT` environment variable with base64-encoded service account credentials.
 2.  Use default credentials (e.g., GKE Workload Identity).
+
+## Database Migrations
+
+The project uses node-pg-migrate for managing database schema changes. Migrations are stored in the `migrations` directory and are written in JavaScript using ES modules syntax.
+
+### Running Migrations
+
+To apply all pending migrations:
+
+```bash
+npm run migrate:up
+```
+
+To roll back the last migration:
+
+```bash
+npm run migrate:down
+```
+
+### Creating New Migrations
+
+To create a new migration file:
+
+```bash
+npm run migrate:create my_migration_name
+```
+
+This will create a new file in the `migrations` directory with a timestamp prefix, e.g., `migrations/20240330123456_my_migration_name.js`.
+
+The migration file will contain `up` and `down` functions:
+- `up`: Contains the changes to apply
+- `down`: Contains the logic to reverse those changes
+
+Example migration file:
+
+```javascript
+/** @type {import('node-pg-migrate').ColumnDefinitions | undefined} */
+export const shorthands = undefined;
+
+/** @param pgm {import('node-pg-migrate').MigrationBuilder} */
+export async function up(pgm) {
+  pgm.createTable('users', {
+    id: 'id',
+    name: { type: 'varchar(1000)', notNull: true },
+    created_at: {
+      type: 'timestamp',
+      notNull: true,
+      default: pgm.func('current_timestamp')
+    }
+  });
+}
+
+/** @param pgm {import('node-pg-migrate').MigrationBuilder} */
+export async function down(pgm) {
+  pgm.dropTable('users');
+}
+```
+
+### TimescaleDB Continuous Aggregates
+
+TimescaleDB continuous aggregates cannot be created inside a transaction block, which is how node-pg-migrate runs migrations by default. To handle this, the project uses a separate SQL script for creating continuous aggregates:
+
+1. Regular tables and indexes are created using migrations
+2. Continuous aggregates are created using a separate SQL script that runs directly inside the Docker container
+
+To set up the complete database schema:
+
+```bash
+npm run setup:db
+```
+
+This command runs both the migrations and the continuous aggregates setup script. The continuous aggregates script is executed inside the TimescaleDB Docker container to avoid transaction issues.
+
+If you need to add new continuous aggregates, add them to the `scripts/setup-continuous-aggregates.sql` file.
+
+### Migration Configuration
+
+Database connection settings for migrations are stored in `database.json`:
+
+```json
+{
+  "dev": {
+    "driver": "pg",
+    "user": "postgres",
+    "password": "postgres",
+    "host": "localhost",
+    "port": 15432,
+    "database": "postgres"
+  },
+  "prod": {
+    "driver": "pg",
+    "url": {"ENV": "DATABASE_URL"}
+  }
+}
+```
 
 ## Running the Server
 
