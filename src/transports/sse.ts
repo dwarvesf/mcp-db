@@ -6,6 +6,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 export interface SSETransportOptions {
   port?: number;
   host?: string;
+  keepAliveInterval?: number; // Interval in ms to send keep-alive pings
 }
 
 export class SSETransport {
@@ -13,11 +14,13 @@ export class SSETransport {
   private transports: { [sessionId: string]: SSEServerTransport } = {};
   private options: SSETransportOptions;
   private server?: Server;
+  private keepAliveIntervals: { [sessionId: string]: NodeJS.Timeout } = {};
 
   constructor(options: SSETransportOptions = {}) {
     this.options = {
       port: options.port || 3001,
-      host: options.host || 'localhost'
+      host: options.host || 'localhost',
+      keepAliveInterval: options.keepAliveInterval || 30000 // Default: 30 seconds
     };
 
     // Enable CORS with proper options
@@ -33,7 +36,20 @@ export class SSETransport {
       const transport = new SSEServerTransport('/messages', res);
       this.transports[transport.sessionId] = transport;
       
+      // Set up keep-alive ping
+      if (this.options.keepAliveInterval) {
+        this.keepAliveIntervals[transport.sessionId] = setInterval(() => {
+          // Send an empty comment as a keep-alive ping
+          res.write(':\n\n');
+        }, this.options.keepAliveInterval);
+      }
+      
       res.on('close', () => {
+        // Clear keep-alive interval when connection is closed
+        if (this.keepAliveIntervals[transport.sessionId]) {
+          clearInterval(this.keepAliveIntervals[transport.sessionId]);
+          delete this.keepAliveIntervals[transport.sessionId];
+        }
         delete this.transports[transport.sessionId];
       });
 

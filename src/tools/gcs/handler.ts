@@ -51,6 +51,7 @@ export async function handleGCSDirectoryTree(
 
   // Build the result structure
   const result = {
+    bucket,
     files: files.map(file => ({
       name: file.name,
       // Handle potential undefined size safely

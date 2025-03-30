@@ -6,6 +6,10 @@ export const gcsDirectoryTreeTool: Tool = {
   inputSchema: {
     type: "object",
     properties: {
+      bucket: {
+        type: "string",
+        description: "The name of the GCS bucket to list objects from",
+      },
       prefix: {
         type: "string",
         description: "Optional prefix to filter objects by (e.g., 'folder/')",
