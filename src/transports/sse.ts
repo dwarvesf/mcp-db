@@ -83,6 +83,11 @@ export class SSETransport {
     });
   }
 
+  // healthz endpoint
+  public healthz(req: Request, res: Response): void {
+    res.status(200).send('OK');
+  }
+
   async start(server: Server): Promise<void> {
     this.server = server;
     const port = this.options.port || 3001;
