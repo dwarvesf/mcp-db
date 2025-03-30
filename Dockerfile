@@ -1,0 +1,44 @@
+# Build stage
+FROM node:18 AS builder
+
+WORKDIR /app
+
+# Copy all source files first
+COPY . .
+
+# Install dependencies and build
+RUN npm ci && \
+    npm run build
+
+# Production stage
+FROM node:18
+
+# Create app directory and non-root user with proper home directory
+WORKDIR /app
+RUN groupadd -r appgroup && \
+    useradd -r -g appgroup -m -d /home/appuser appuser && \
+    chown -R appuser:appgroup /app
+
+# Copy package files and install production dependencies
+COPY package*.json tsconfig.json ./
+ENV NODE_ENV=production
+
+# Install production dependencies and rebuild native modules
+RUN npm ci --omit=dev --ignore-scripts && \
+    npm rebuild && \
+    chown -R appuser:appgroup /app
+
+# Copy built files from builder stage
+COPY --from=builder /app/dist ./dist
+RUN chown -R appuser:appgroup /app/dist
+
+# Set environment variables
+ENV LOG_LEVEL=info
+ENV HOME=/home/appuser
+
+# Switch to non-root user
+USER appuser
+
+# Use ENTRYPOINT and CMD to allow argument overrides
+ENTRYPOINT ["npm", "start", "--"]
+CMD []

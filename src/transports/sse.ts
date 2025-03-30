@@ -19,7 +19,7 @@ export class SSETransport {
   constructor(options: SSETransportOptions = {}) {
     this.options = {
       port: options.port || 3001,
-      host: options.host || 'localhost',
+      host: options.host || '0.0.0.0', // Changed from localhost to 0.0.0.0
       keepAliveInterval: options.keepAliveInterval || 30000 // Default: 30 seconds
     };
 
@@ -30,6 +30,14 @@ export class SSETransport {
       methods: ['GET', 'POST'],
       allowedHeaders: ['Content-Type']
     }));
+
+    // Health check endpoint
+    this.app.get('/healthz', (_req: Request, res: Response) => {
+      res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString()
+      });
+    });
 
     // SSE endpoint
     this.app.get('/sse', (req: Request, res: Response) => {
@@ -86,7 +94,7 @@ export class SSETransport {
   async start(server: Server): Promise<void> {
     this.server = server;
     const port = this.options.port || 3001;
-    const host = this.options.host || 'localhost';
+    const host = this.options.host || '0.0.0.0'; // Changed from localhost to 0.0.0.0
     
     return new Promise((resolve) => {
       this.app.listen(port, host, () => {
@@ -95,4 +103,4 @@ export class SSETransport {
       });
     });
   }
-} 
+}
