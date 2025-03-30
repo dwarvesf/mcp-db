@@ -1,10 +1,7 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:18 AS builder
 
 WORKDIR /app
-
-# Install build dependencies
-RUN apk add --no-cache python3 make g++
 
 # Copy all source files first
 COPY . .
@@ -14,14 +11,13 @@ RUN npm ci && \
     npm run build
 
 # Production stage
-FROM node:18-alpine
+FROM node:18
 
-# Install build dependencies for native modules
-RUN apk add --no-cache python3 make g++
-
-# Create app directory and non-root user
+# Create app directory and non-root user with proper home directory
 WORKDIR /app
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN groupadd -r appgroup && \
+    useradd -r -g appgroup -m -d /home/appuser appuser && \
+    chown -R appuser:appgroup /app
 
 # Copy package files and install production dependencies
 COPY package*.json tsconfig.json ./
@@ -30,15 +26,15 @@ ENV NODE_ENV=production
 # Install production dependencies and rebuild native modules
 RUN npm ci --omit=dev --ignore-scripts && \
     npm rebuild && \
-    # Clean up build dependencies and cache
-    apk del python3 make g++ && \
-    npm cache clean --force
+    chown -R appuser:appgroup /app
 
 # Copy built files from builder stage
 COPY --from=builder /app/dist ./dist
+RUN chown -R appuser:appgroup /app/dist
 
 # Set environment variables
 ENV LOG_LEVEL=info
+ENV HOME=/home/appuser
 
 # Switch to non-root user
 USER appuser

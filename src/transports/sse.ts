@@ -31,6 +31,14 @@ export class SSETransport {
       allowedHeaders: ['Content-Type']
     }));
 
+    // Health check endpoint
+    this.app.get('/healthz', (_req: Request, res: Response) => {
+      res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString()
+      });
+    });
+
     // SSE endpoint
     this.app.get('/sse', (req: Request, res: Response) => {
       const transport = new SSEServerTransport('/messages', res);
@@ -83,11 +91,6 @@ export class SSETransport {
     });
   }
 
-  // healthz endpoint
-  public healthz(req: Request, res: Response): void {
-    res.status(200).send('OK');
-  }
-
   async start(server: Server): Promise<void> {
     this.server = server;
     const port = this.options.port || 3001;
@@ -100,4 +103,4 @@ export class SSETransport {
       });
     });
   }
-} 
+}
