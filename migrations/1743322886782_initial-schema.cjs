@@ -12,8 +12,7 @@ exports.up = function(pgm) {
   pgm.createTable('observation_log', {
     id: {
       type: 'bigint',
-      notNull: true,
-      primaryKey: true
+      notNull: true
     },
     timestamp: {
       type: 'timestamptz',
