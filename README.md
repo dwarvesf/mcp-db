@@ -183,16 +183,29 @@ make debug
 make dev
 ```
 
-or run with supergateway:
+This will start the server on port 3001 using SSE transport.
 
-```bash
-npx supergateway --port 8000 --stdio "make dev"
-```
+### Client Configuration
 
-then use ngrok to expose the server:
+To connect your MCP client to the local server, add the following configuration:
 
-```bash
-ngrok http 8000
+```json
+{
+  "mcpServers": {
+    "mcp-db": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "--net=host",
+        "supercorp/supergateway",
+        "--sse",
+        "http://localhost:3001/sse"
+      ]
+    }
+  }
+}
 ```
 
 ### Production Mode
