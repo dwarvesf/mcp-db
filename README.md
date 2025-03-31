@@ -171,19 +171,55 @@ Database connection settings for migrations are stored in `database.json`:
 
 ## Running the Server
 
-### Debug with MCP Inspector
+This project supports two server implementations:
+
+1. **Standard MCP SDK implementation** - The original implementation
+2. **FastMCP implementation** - A simpler framework-based approach
+
+### Standard MCP SDK Implementation
+
+#### Debug with MCP Inspector
 
 ```bash
 make debug
 ```
 
-### Development Mode
+#### Development Mode
 
 ```bash
 make dev
 ```
 
 This will start the server on port 3001 using SSE transport.
+
+### FastMCP Implementation
+
+The FastMCP implementation provides a simpler, more streamlined approach using the FastMCP framework.
+
+#### Debug with FastMCP Inspector
+
+```bash
+npm run debug:fast
+```
+
+#### Development Mode with FastMCP
+
+```bash
+npm run dev:fast
+```
+
+#### Differences Between Implementations
+
+The FastMCP implementation offers:
+- Simplified tool and resource registration
+- Built-in SSE support
+- Cleaner code structure
+- Better error handling
+- Automated typing with Zod
+
+#### FastMCP Version Compatibility
+
+We're currently using FastMCP v1.20.5. When upgrading to newer versions, be aware that there might be breaking changes in the API. See [MIGRATION.md](./MIGRATION.md#fastmcp-version-compatibility) for details on compatibility issues and how to address them.
 
 ### Client Configuration
 

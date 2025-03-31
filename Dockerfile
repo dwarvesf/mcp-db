@@ -40,6 +40,19 @@ ENV HOME=/home/appuser
 # Switch to non-root user
 USER appuser
 
-# Use ENTRYPOINT and CMD to allow argument overrides
-ENTRYPOINT ["npm", "start", "--"]
+# Create a runtime script to allow switching between implementations
+COPY <<EOF /app/entrypoint.sh
+#!/bin/sh
+if [ "\$1" = "--fast" ]; then
+  shift
+  exec node ./dist/fast-cli.js "\$@"
+else
+  exec node ./dist/cli.js "\$@"
+fi
+EOF
+
+RUN chmod +x /app/entrypoint.sh
+
+# Use ENTRYPOINT to run our script
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD []

@@ -29,9 +29,17 @@ build:
 dev: migrate-up build
 	NODE_ENV=development npm run dev -- --transport=sse --port=3001
 
+## Run the FastMCP server in development mode
+dev-fast: migrate-up build
+	NODE_ENV=development npm run dev:fast -- --transport=sse --port=3001
+
 ## debug the server in development mode
 debug:
 	NODE_ENV=development npm run debug
+
+## debug the FastMCP server in development mode
+debug-fast:
+	NODE_ENV=development npm run debug:fast
 
 ## Clean the build directory
 clean:
