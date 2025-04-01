@@ -13,10 +13,10 @@ setup-db:
 	devbox run setup-db
 
 down:
-	docker-compose down
+	docker compose down
 
 init: down
-	docker-compose up -d
+	docker compose up -d
 	sleep 2
 	make setup-db
 
