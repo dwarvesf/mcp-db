@@ -4,6 +4,7 @@ const duckdb = pkg;
 import { handleDuckDBQuery } from '../../tools/duckdb/handler.js';
 import { DuckDBQueryArgs } from '../../types.js';
 import { FastMCPTool } from '../types.js';
+import { serializeBigInt } from '../../utils.js';
 
 type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
 
@@ -20,7 +21,7 @@ export function createDuckDBReadTool(duckDBConn: DuckDBConnection | null): FastM
         throw new Error("DuckDB connection not initialized");
       }
       const result = await handleDuckDBQuery(duckDBConn, args);
-      return JSON.stringify(result);
+      return JSON.stringify(serializeBigInt(result));
     }
   };
 } 
