@@ -1,0 +1,30 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.14.0/.schema/devbox.schema.json",
+  "packages": [
+    "nodejs@23.10.0",
+    "github:rupurt/duckdb-nix",
+    "uv@0.6.9",
+    "python@3.12",
+    "ngrok@3.19.1"
+  ],
+  "shell": {
+    "init_hook": [
+      "echo 'Welcome to devbox!' > /dev/null"
+    ],
+    "scripts": {
+      "migrate-up": ["npm run migrate:up"],
+      "migrate-down": ["npm run migrate:down"],
+      "setup-continuous-aggregates": ["docker exec -i mcp-db-timescaledb-1 psql -U postgres -d postgres -f - < scripts/setup-continuous-aggregates.sql"],
+      "setup-db": ["npm run migrate:up", "docker exec -i mcp-db-timescaledb-1 psql -U postgres -d postgres -f - < scripts/setup-continuous-aggregates.sql"],
+      "down": ["docker compose down"],
+      "init": ["docker compose down", "docker compose up -d"],
+      "install": ["npm install"],
+      "build": ["npm run build"],
+      "dev": ["npm run migrate:up", "npm run build", "NODE_ENV=development npm run dev -- --transport=sse --port=3001"],
+      "dev-fast": ["npm run migrate:up", "npm run build", "NODE_ENV=development npm run dev:fast -- --transport=sse --port=3001"],
+      "debug": ["NODE_ENV=development npm run debug"],
+      "debug-fast": ["NODE_ENV=development npm run debug:fast"],
+      "clean": ["rm -rf dist"]
+    }
+  }
+}
