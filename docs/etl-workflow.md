@@ -116,28 +116,25 @@ This repository contains Mastra agents and workflows that read parquet files fro
 
 2. **Install dependencies:**
    ```bash
-   npm install
+   make init
    ```
 
 3. **Configure MCP Integration:**
    Create a `.env` file with:
    ```
-   MCP_DB_URL=http://localhost:3000
-   GCS_BUCKET=df-landing-zone
-   DATABASE_URL=postgres://user:password@localhost:15432/knowledge_hub
+    MCP_DB_URL=http://localhost:3000
+    GCS_BUCKET=df-landing-zone
+    DATABASE_URL=postgres://postgres:postgres@localhost:15432/postgres
+    GCP_SERVICE_ACCOUNT=your-base64-encoded-service-account
+    GCS_KEY_ID=your-gcs-key-id
+    GCS_SECRET=your-gcs-secret-id
    ```
-
-4. **Build the project:**
+4. **Run the Mastra agent:**
    ```bash
-   npm run build
+   make dev
    ```
 
-5. **Run the Mastra agent:**
-   ```bash
-   npm run dev
-   ```
-
-6. **Execute the Workflow:**
+5. **Execute the Workflow:**
    ```bash
    npx mastra workflow run --workflow syncObservationWorkflow --trigger '{"topic":"hackernews"}'
    ```
