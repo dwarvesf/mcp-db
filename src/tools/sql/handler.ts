@@ -16,6 +16,32 @@ function isSelectQuery(sql: string): boolean {
   return /^(with\s+[\s\S]+\s+)?\s*select\s/i.test(normalizedSql);
 }
 
+function isInsertQuery(sql: string): boolean {
+  // Remove comments and normalize whitespace
+  const normalizedSql = sql
+    .replace(/--.*$/gm, '')
+    .replace(/\/\*[\s\S]*?\*\//gm, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+
+  // Check if it's an INSERT query
+  return /^insert\s+into\s/i.test(normalizedSql);
+}
+
+function hasReturningClause(sql: string): boolean {
+  // Remove comments and normalize whitespace
+  const normalizedSql = sql
+    .replace(/--.*$/gm, '')
+    .replace(/\/\*[\s\S]*?\*\//gm, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+
+  // Check for RETURNING clause
+  return /\breturning\b/i.test(normalizedSql);
+}
+
 function hasLimitClause(sql: string): boolean {
   // Remove comments and normalize whitespace
   const normalizedSql = sql
@@ -38,6 +64,15 @@ function addLimitToQuery(sql: string, limit: number = DEFAULT_QUERY_LIMIT): stri
   return sql;
 }
 
+function addReturningToQuery(sql: string): string {
+  if (isInsertQuery(sql) && !hasReturningClause(sql)) {
+    // Remove trailing semicolon if present
+    const trimmedSql = sql.trim().replace(/;$/, '');
+    return `${trimmedSql} RETURNING *`;
+  }
+  return sql;
+}
+
 export async function handlePostgreSQLQuery(
   pool: Pool,
   sql: string,
@@ -49,9 +84,13 @@ export async function handlePostgreSQLQuery(
 
   try {
     // Add LIMIT clause to SELECT queries if not present
-    const modifiedSql = addLimitToQuery(sql);
+    let modifiedSql = addLimitToQuery(sql);
+    
+    // Add RETURNING clause to INSERT queries if not present
+    modifiedSql = addReturningToQuery(modifiedSql);
+    
     if (modifiedSql !== sql) {
-      console.error(`Query modified to include limit: ${modifiedSql}`);
+      console.error(`Query modified: ${modifiedSql}`);
     }
 
     return await pool.query(modifiedSql, params);
