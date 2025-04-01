@@ -77,7 +77,7 @@ The landing-zone repository serves as a temporary repository where raw data from
    ```bash
    cd apps/discord
    docker build -t discord-crawler .
-   docker run -d --env-file ../../.env discord-crawler
+   docker run -d --env-file .env discord-crawler
    ```
 
 ## 2. Setting up dwarvesf/mcp-db
