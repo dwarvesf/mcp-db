@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18 AS builder
+FROM node:20 AS builder
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ RUN npm ci && \
     npm run build
 
 # Production stage
-FROM node:18
+FROM node:20
 
 # Create app directory and non-root user with proper home directory
 WORKDIR /app
@@ -41,7 +41,8 @@ ENV HOME=/home/appuser
 USER appuser
 
 # Create a runtime script to allow switching between implementations
-COPY <<EOF /app/entrypoint.sh
+# Set executable permissions directly during copy
+COPY --chmod=0755 <<EOF /app/entrypoint.sh
 #!/bin/sh
 if [ "\$1" = "--fast" ]; then
   shift
@@ -50,8 +51,6 @@ else
   exec node ./dist/cli.js "\$@"
 fi
 EOF
-
-RUN chmod +x /app/entrypoint.sh
 
 # Use ENTRYPOINT to run our script
 ENTRYPOINT ["/app/entrypoint.sh"]
