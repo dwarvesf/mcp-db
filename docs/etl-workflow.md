@@ -75,7 +75,7 @@ The mcp-db repository provides tools for interacting with databases, including P
 
 2. **Install dependencies:**
    ```bash
-   npm install
+   make install
    ```
 
 3. **Set up environment variables:**
@@ -89,7 +89,6 @@ The mcp-db repository provides tools for interacting with databases, including P
 4. **Start TimescaleDB and setup the database:**
    ```bash
    make init
-   make setup-db
    ```
 
 5. **Start the server:**
@@ -116,7 +115,7 @@ This repository contains Mastra agents and workflows that read parquet files fro
 
 2. **Install dependencies:**
    ```bash
-   make init
+   make install
    ```
 
 3. **Configure MCP Integration:**
