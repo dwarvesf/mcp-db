@@ -13,32 +13,40 @@ A Model Context Protocol (MCP) server that provides tools for interacting with d
 
 ```plaintext
 .
+├── docs
 ├── migrations
-│   └── 1743322886782_initial-schema.js
+├── scripts
 ├── src
-│   ├── resources
-│   │   ├── gcs
-│   │   ├── sql
-│   │   └── index.ts
-│   ├── services
-│   │   ├── duckdb.ts
-│   │   ├── gcs.ts
-│   │   └── postgres.ts
-│   ├── tools
-│   │   ├── duckdb
-│   │   ├── sql
-│   │   └── index.ts
-│   ├── config.ts
-│   ├── handlers.ts
-│   ├── server.ts
-│   ├── types.ts
-│   └── utils.ts
-├── Makefile
-├── README.md
-├── database.json
-├── docker-compose.yml
-├── package-lock.json
-├── package.json
+│   ├── fast-resources
+│   │   ├── gcs
+│   │   ├── sql
+│   │   └── index.ts
+│   ├── fast-tools
+│   │   ├── duckdb
+│   │   ├── gcs
+│   │   ├── sql
+│   │   ├── index.ts
+│   │   └── types.ts
+│   ├── resources
+│   │   ├── gcs
+│   │   ├── sql
+│   │   └── index.ts
+│   │   └── ...
+│   ├── services
+│   │   ├── duckdb.ts
+│   │   └── ...
+│   ├── tools
+│   │   ├── duckdb
+│   │   └── ...
+│   ├── transports
+│   │   └── sse.ts
+│   ├── utils
+│   │   ├── index.ts
+│   │   └── ...
+│   ├── cli.ts
+│   ├── ... 
+│   └── utils.ts
+├── ...
 └── tsconfig.json
 ```
 
