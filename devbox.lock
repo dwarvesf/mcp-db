@@ -1,9 +1,6 @@
 {
   "lockfile_version": "1",
   "packages": {
-    "github:NixOS/nixpkgs/nixpkgs-unstable": {
-      "resolved": "github:NixOS/nixpkgs/bd3bac8bfb542dbde7ffffb6987a1a1f9d41699f?lastModified=1743014863&narHash=sha256-jAIUqsiN2r3hCuHji80U7NNEafpIMBXiwKlSrjWMlpg%3D"
-    },
     "github:rupurt/duckdb-nix": {
       "resolved": "github:rupurt/duckdb-nix/d8a506a65c3156e28e08d8dab959d9fb7ea7d705?lastModified=1741804093&narHash=sha256-xMh09nhpFzxdIO9yYl1zgeWSVC7WVELVLTZMJ2VcKLQ%3D"
     },

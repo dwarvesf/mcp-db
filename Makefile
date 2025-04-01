@@ -1,46 +1,49 @@
 .PHONY: migrate-up migrate-down setup-continuous-aggregates setup-db
 
 migrate-up:
-	npm run migrate:up
+	devbox run migrate-up
 
 migrate-down:
-	npm run migrate:down
+	devbox run migrate-down
 
 setup-continuous-aggregates:
-	docker exec -i mcp-db-timescaledb-1 psql -U postgres -d postgres -f - < scripts/setup-continuous-aggregates.sql
+	devbox run setup-continuous-aggregates
 
-setup-db: migrate-up setup-continuous-aggregates
+setup-db:
+	devbox run setup-db
 
 down:
-	docker compose down
+	docker-compose down
 
 init: down
-	docker compose up -d
+	docker-compose up -d
+	sleep 2
+	make setup-db
 
 ## Install dependencies
 install:
-	npm install
+	devbox run install
 
 ## Build the project
 build:
-	npm run build
+	devbox run build
 
 ## Run the server in development mode
-dev: migrate-up build
-	NODE_ENV=development npm run dev -- --transport=sse --port=3001
+dev:
+	devbox run dev
 
 ## Run the FastMCP server in development mode
-dev-fast: migrate-up build
-	NODE_ENV=development npm run dev:fast -- --transport=sse --port=3001
+dev-fast:
+	devbox run dev-fast
 
 ## debug the server in development mode
 debug:
-	NODE_ENV=development npm run debug
+	devbox run debug
 
 ## debug the FastMCP server in development mode
 debug-fast:
-	NODE_ENV=development npm run debug:fast
+	devbox run debug-fast
 
 ## Clean the build directory
 clean:
-	rm -rf dist
+	devbox run clean

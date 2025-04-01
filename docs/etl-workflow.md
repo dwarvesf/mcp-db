@@ -64,7 +64,7 @@ The landing-zone repository serves as a temporary repository where raw data from
      ```
      VAULT_TOKEN=your-vault-token
      VAULT_ADDR=your-vault-address
-     VAULT_PATH=your-vault-path
+     VAULT_PATH=kv/data/agentic/dev/landing-zone
      ```
    - Contact Quang for credentials using the user `agentic-dev`
 
