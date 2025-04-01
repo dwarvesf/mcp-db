@@ -67,6 +67,10 @@ The landing-zone repository serves as a temporary repository where raw data from
      VAULT_PATH=kv/data/agentic/dev/landing-zone
      ```
    - Contact Quang for credentials using the user `agentic-dev`
+   - To retreive vault token, run:
+     ```bash
+     vault login -method=userpass username=agentic-dev
+     ```
 
 4. **Test a Crawler:**
    Navigate to one of the app directories and run its Docker container:
