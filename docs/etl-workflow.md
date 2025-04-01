@@ -8,32 +8,7 @@ This guide will walk you through setting up a complete Data ETL pipeline using t
 
 ## Architecture Overview
 
-```mermaid
-graph TD
-    subgraph "Landing Zone"
-        A[Discord Crawler] -->|Daily Jobs| B[Parquet Files]
-        C[Hacker News Crawler] -->|Daily Jobs| B
-        E[Other Sources] -->|Daily Jobs| B
-        B -->|Store| D[GCS Bucket]
-    end
-    
-    subgraph "MCP-DB"
-        F[MCP Server] -->|GCS Tools| D
-        F -->|Tool: duckdb_read_parquet_files| G[Parquet Query]
-        F -->|Tool: sql_query_create| H[TimescaleDB CRUD]
-    end
-    
-    subgraph "MCP-Background-Interface"
-        I[Mastra Agent] -->|Request: duckdb_read_parquet_files| F
-        I -->|Request: sql_query_create| F
-        J[Sync Workflow] -->|Orchestrate| I
-        D -.->|Source Data| J
-        I -->|Write| L[Knowledge Hub DB]
-    end
-    
-    D -->|Read Parquet| G
-    H -->|Insert Data| L
-```
+![alt text](assets/etl.png)
 
 ## 1. Setting up dwarvesf/landing-zone
 
