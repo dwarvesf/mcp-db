@@ -8,19 +8,26 @@ There are two ways for Claude Desktop to connect to the mcp server:
 ## 1. Using ngrok and supergateway
 
 ### Prerequisites
+
 - ngrok
 - docker
 
 ### Setup
+
 1. Start the mcp server:
+
    ```bash
-   $ make dev-fast ## this will start the mcp server on port 3001
+   make dev-fast ## this will start the mcp server on port 3001
    ```
+
 2. Start ngrok:
+
    ```bash
-   $ ngrok http 3001
+   ngrok http 3001
    ```
+
 3. Config `claude_desktop_config.json`:
+
    ```json
     {
         "mcpServers": {
@@ -38,20 +45,26 @@ There are two ways for Claude Desktop to connect to the mcp server:
         }
     }
     ```
+
 4. Start Claude Desktop and use tools that the mcp server provides.
 
 ## 2. Using mcp-proxy
 
 ### Prerequisites
+
 - python
 - [mcp-proxy](https://github.com/sparfenyuk/mcp-proxy)
 
 ### Setup
+
 1. Start the mcp server:
+
    ```bash
-   $ make dev-fast ## this will start the mcp server on port 3001
+   make dev-fast ## this will start the mcp server on port 3001
    ```
+
 2. Config `claude_desktop_config.json`:
+
    ```json
     {
         "mcpServers": {
@@ -64,8 +77,11 @@ There are two ways for Claude Desktop to connect to the mcp server:
         }
     }
     ```
+
 3. Start Claude Desktop from shell:
+
    ```bash
-    $ /Applications/Claude.app/Contents/MacOS/Claude
+    /Applications/Claude.app/Contents/MacOS/Claude
     ```
+
 4. Start Claude Desktop and use tools that the mcp server provides.
