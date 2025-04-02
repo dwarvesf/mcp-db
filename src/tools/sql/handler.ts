@@ -85,10 +85,10 @@ export async function handlePostgreSQLQuery(
   try {
     // Add LIMIT clause to SELECT queries if not present
     let modifiedSql = addLimitToQuery(sql);
-    
+
     // Add RETURNING clause to INSERT queries if not present
     modifiedSql = addReturningToQuery(modifiedSql);
-    
+
     if (modifiedSql !== sql) {
       console.error(`Query modified: ${modifiedSql}`);
     }
