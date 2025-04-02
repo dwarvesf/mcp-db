@@ -1,31 +1,41 @@
-// Helper function to safely serialize BigInt values
 export function serializeBigInt(obj: any): any {
   if (obj === null || obj === undefined) {
     return obj;
   }
-  
+
   if (typeof obj === 'bigint') {
     return obj.toString();
   }
-  
+
+  // Handle Date objects
+  if (obj instanceof Date) {
+    return obj.toISOString();
+  }
+
+  // Special case for date strings that aren't Date objects yet
+  if (typeof obj === 'string' &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/.test(obj)) {
+    return obj;
+  }
+
   if (Array.isArray(obj)) {
     return obj.map(serializeBigInt);
   }
-  
+
   if (typeof obj === 'object') {
     return Object.fromEntries(
       Object.entries(obj).map(([key, value]) => [key, serializeBigInt(value)])
     );
   }
-  
+
   return obj;
 }
 
 export function formatErrorResponse(error: unknown): { content: any[], isError: boolean } {
   return {
-    content: [{ 
-      type: "text", 
-      text: `Error: ${error instanceof Error ? error.message : String(error)}` 
+    content: [{
+      type: "text",
+      text: `Error: ${error instanceof Error ? error.message : String(error)}`
     }],
     isError: true
   };
@@ -33,8 +43,8 @@ export function formatErrorResponse(error: unknown): { content: any[], isError: 
 
 export function formatSuccessResponse(data: any): { content: any[] } {
   return {
-    content: [{ 
-      type: "text", 
+    content: [{
+      type: "text",
       text: JSON.stringify(serializeBigInt(data), null, 2)
     }]
   };
