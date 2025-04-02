@@ -15,6 +15,7 @@ This guide will walk you through setting up a complete Data ETL pipeline using t
 The landing-zone repository serves as a temporary repository where raw data from various sources is collected into a single Google Cloud Storage (GCS) bucket.
 
 ### Prerequisites
+
 - Google Cloud Platform account with GCS access
 - Docker (for running the data collection apps)
 - Vault access (ask Quang for credentials using user `agentic-dev`)
@@ -22,6 +23,7 @@ The landing-zone repository serves as a temporary repository where raw data from
 ### Installation Steps
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/dwarvesf/landing-zone.git
    cd landing-zone
@@ -36,19 +38,23 @@ The landing-zone repository serves as a temporary repository where raw data from
 
 3. **Configure Vault Access:**
    - Create a `.env` file with the following content:
+
      ```
      VAULT_TOKEN=your-vault-token
      VAULT_ADDR=your-vault-address
      VAULT_PATH=kv/data/agentic/dev/landing-zone
      ```
+
    - Contact Quang for credentials using the user `agentic-dev`
    - To retreive vault token, run:
+
      ```bash
      vault login -method=userpass username=agentic-dev
      ```
 
 4. **Test a Crawler:**
    Navigate to one of the app directories and run its Docker container:
+
    ```bash
    cd apps/discord
    docker build -t discord-crawler .
@@ -60,6 +66,7 @@ The landing-zone repository serves as a temporary repository where raw data from
 The mcp-db repository provides tools for interacting with databases, including PostgreSQL, DuckDB, and GCS Parquet files.
 
 ### Prerequisites
+
 - Node.js 22 or higher
 - TypeScript
 - PostgreSQL (TimescaleDB)
@@ -68,30 +75,38 @@ The mcp-db repository provides tools for interacting with databases, including P
 ### Installation Steps
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/dwarvesf/mcp-db.git
    cd mcp-db
    ```
 
 2. **Install dependencies:**
+
    ```bash
    make install
    ```
 
 3. **Set up environment variables:**
    Create a `.env` file with:
+
    ```
    DATABASE_URL=postgres://user:password@localhost:15432/knowledge_hub
    LOG_LEVEL=info
    GCP_SERVICE_ACCOUNT=your-base64-encoded-service-account
+   GCP_SERVICE_ACCOUNT=your-base64-encoded-service-account
+   GCS_KEY_ID=your-gcs-key-id
+   GCS_SECRET=your-gcs-secret-id
    ```
 
 4. **Start TimescaleDB and setup the database:**
+
    ```bash
    make init
    ```
 
 5. **Start the server:**
+
    ```bash
    make dev
    ```
@@ -101,6 +116,7 @@ The mcp-db repository provides tools for interacting with databases, including P
 This repository contains Mastra agents and workflows that read parquet files from GCS and insert data into TimescaleDB.
 
 ### Prerequisites
+
 - Node.js
 - TypeScript
 - Mastra CLI
@@ -108,32 +124,35 @@ This repository contains Mastra agents and workflows that read parquet files fro
 ### Installation Steps
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/dwarvesf/mcp-background-interface.git
    cd mcp-background-interface
    ```
 
 2. **Install dependencies:**
+
    ```bash
    make install
    ```
 
 3. **Configure MCP Integration:**
    Create a `.env` file with:
+
    ```
-    MCP_DB_URL=http://localhost:3000
-    GCS_BUCKET=df-landing-zone
-    DATABASE_URL=postgres://postgres:postgres@localhost:15432/postgres
-    GCP_SERVICE_ACCOUNT=your-base64-encoded-service-account
-    GCS_KEY_ID=your-gcs-key-id
-    GCS_SECRET=your-gcs-secret-id
+   MCP_DB_URL=http://localhost:3000
+   GCS_BUCKET=df-landing-zone
+   DATABASE_URL=postgres://postgres:postgres@localhost:15432/postgres
    ```
+
 4. **Run the Mastra agent:**
+
    ```bash
    make dev
    ```
 
 5. **Execute the Workflow:**
+
    ```bash
    npx mastra workflow run --workflow syncObservationWorkflow --trigger '{"topic":"hackernews"}'
    ```
