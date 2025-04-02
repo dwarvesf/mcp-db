@@ -1,4 +1,4 @@
-# Setting up Data ETL with MCP
+# Setting up data ETL with MCP
 
 This guide will walk you through setting up a complete Data ETL pipeline using the Model Context Protocol (MCP) ecosystem. We'll explore three key repositories that work together to create a seamless data pipeline:
 
@@ -6,7 +6,7 @@ This guide will walk you through setting up a complete Data ETL pipeline using t
 2. **dwarvesf/mcp-db** - Provides tools to access parquet files from GCS and CRUD operations for TimescaleDB
 3. **dwarvesf/mcp-background-interface** - Uses Mastra agents/workflows that leverage tools from mcp-db to read parquet files and insert data into TimescaleDB
 
-## Architecture Overview
+## Architecture overview
 
 ![alt text](assets/etl.png)
 
@@ -20,7 +20,7 @@ The landing-zone repository serves as a temporary repository where raw data from
 - Docker (for running the data collection apps)
 - Vault access (ask Quang for credentials using user `agentic-dev`)
 
-### Installation Steps
+### Installation steps
 
 1. **Clone the repository:**
 
@@ -29,14 +29,14 @@ The landing-zone repository serves as a temporary repository where raw data from
    cd landing-zone
    ```
 
-2. **Understand Repository Structure:**
+2. **Understand repository structure:**
    The repository is organized as follows:
    - `/apps` - Contains subdirectories for each data source's crawler
      - `discord` - Crawler for Discord data
      - `hackernews` - Crawler for Hacker News data
      - etc.
 
-3. **Configure Vault Access:**
+3. **Configure Vault access:**
    - Create a `.env` file with the following content:
 
      ```
@@ -52,13 +52,12 @@ The landing-zone repository serves as a temporary repository where raw data from
      vault login -method=userpass username=agentic-dev
      ```
 
-4. **Test a Crawler:**
-   Navigate to one of the app directories and run its Docker container:
+4. **Run a crawler:**
+   - Each crawler has its own directory. Navigate to the desired crawler's directory and run by following commands:
 
    ```bash
-   cd apps/discord
-   docker build -t discord-crawler .
-   docker run -d --env-file .env discord-crawler
+   cd apps/<crawler-name>
+   make dev
    ```
 
 ## 2. Setting up dwarvesf/mcp-db
@@ -94,7 +93,6 @@ The mcp-db repository provides tools for interacting with databases, including P
    DATABASE_URL=postgres://user:password@localhost:15432/knowledge_hub
    LOG_LEVEL=info
    GCP_SERVICE_ACCOUNT=your-base64-encoded-service-account
-   GCP_SERVICE_ACCOUNT=your-base64-encoded-service-account
    GCS_KEY_ID=your-gcs-key-id
    GCS_SECRET=your-gcs-secret-id
    ```
@@ -121,7 +119,7 @@ This repository contains Mastra agents and workflows that read parquet files fro
 - TypeScript
 - Mastra CLI
 
-### Installation Steps
+### Installation steps
 
 1. **Clone the repository:**
 
@@ -136,7 +134,7 @@ This repository contains Mastra agents and workflows that read parquet files fro
    make install
    ```
 
-3. **Configure MCP Integration:**
+3. **Configure MCP integration:**
    Create a `.env` file with:
 
    ```
@@ -151,41 +149,41 @@ This repository contains Mastra agents and workflows that read parquet files fro
    make dev
    ```
 
-5. **Execute the Workflow:**
+5. **Execute the workflow:**
 
    ```bash
    npx mastra workflow run --workflow syncObservationWorkflow --trigger '{"topic":"hackernews"}'
    ```
 
-## Workflow Understanding
+## Workflow understanding
 
-### Data Flow Process
+### Data flow process
 
-1. **Data Collection (landing-zone):**
+1. **Data collection (landing-zone):**
    - Crawlers in `/apps` collect data from different sources
    - Data is saved to GCS as parquet files with the structure: `landing-zone/{data-source}/{timestamp}.parquet`
    - Cronjobs run daily to fetch new data
 
-2. **Data Access (mcp-db):**
+2. **Data access (mcp-db):**
    - Provides tools to access parquet files from GCS
    - Offers SQL query capabilities for TimescaleDB
    - Exposes a consistent API for database operations
 
-3. **Data Processing (mcp-background-interface):**
+3. **Data processing (mcp-background-interface):**
    - Uses Mastra agents/workflows to orchestrate the ETL process
    - Reads parquet files from GCS using mcp-db tools
    - Processes and transforms the data
    - Inserts processed data into TimescaleDB
 
-### Key Components
+### Key components
 
-- **MCP Tools in mcp-db:**
+- **Tools in mcp-db:**
   - `gcs_directory_tree` - Lists GCS objects
   - `duckdb_read_parquet_files` - Queries parquet files
   - `sql_query_read` - Executes SELECT queries
   - `sql_query_create` - Executes CREATE/INSERT statements
 
-- **Mastra Workflows in mcp-background-interface:**
+- **Mastra workflows in mcp-background-interface:**
   - `syncObservationWorkflow` - Orchestrates the ETL process
     - Step 1: Lists parquet files in GCS
     - Step 2: Processes each file in batches
@@ -194,23 +192,23 @@ This repository contains Mastra agents and workflows that read parquet files fro
 
 ## Troubleshooting
 
-### Common Issues
+### Common issues
 
-1. **GCS Access Issues:**
+1. **GCS access issues:**
    - Verify that your service account has proper permissions
    - Check that the GCP_SERVICE_ACCOUNT environment variable is correctly set
 
-2. **Database Connection Issues:**
+2. **Database connection issues:**
    - Ensure TimescaleDB is running and accessible
    - Verify that DATABASE_URL is correct
    - Check for firewall or network restrictions
 
-3. **Workflow Execution Failures:**
+3. **Workflow execution failures:**
    - Check Mastra logs for specific error details
    - Ensure all dependencies are correctly installed
    - Verify that the MCP DB server is running and accessible
 
-### Debugging Tips
+### Debugging tips
 
 - Use `LOG_LEVEL=debug` for more detailed logs
 - Ask Quang to grant access to df-landing-zone bucket for debugging parquet files
