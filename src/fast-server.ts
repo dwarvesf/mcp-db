@@ -13,7 +13,11 @@ import { validateConfig } from './config.js';
 import { createTools } from './fast-tools/index.js';
 import { createResources } from './fast-resources/index.js';
 import { FastMCPTool, FastMCPResource } from './fast-tools/types.js';
-import { log, formatJsonForLog, wrapToolsWithLogging, wrapResourcesWithLogging } from './utils/index.js';
+// Import logJson
+import { log, logJson, formatJsonForLog, wrapToolsWithLogging, wrapResourcesWithLogging } from './utils/index.js';
+// Import IncomingMessage type for authentication
+import { IncomingMessage } from 'http';
+
 
 type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
 
@@ -82,13 +86,66 @@ export async function main(): Promise<void> {
     const config = validateConfig(args);
     log("Configuration validated successfully");
 
-    // Create the FastMCP server
-    const server = new FastMCP({
-      name: "Data-Query-Server",
-      version: "1.0.0",
-    });
 
-    // Setup PostgreSQL
+    // --- Authentication Setup ---
+    // Use apiKey from the validated config object
+    const expectedApiKey = config.apiKey;
+    let authenticateFunction;
+
+    if (expectedApiKey) {
+      log("API_KEY environment variable found. Enabling API key authentication.");
+      // Correct signature: receives IncomingMessage, make it async
+      authenticateFunction = async (req: IncomingMessage) => {
+        // Access Authorization header from IncomingMessage
+        const authHeader = req.headers["authorization"];
+
+        if (!authHeader) {
+          log("Authentication failed: Missing Authorization header", true);
+          const error = new Error("Missing Authorization header");
+          (error as any).status = 401;
+          throw error;
+        }
+
+        // Check for Bearer scheme
+        const parts = authHeader.split(' ');
+        if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
+          log("Authentication failed: Invalid Authorization header format. Expected 'Bearer <token>'", true);
+          const error = new Error("Invalid Authorization header format");
+          (error as any).status = 401;
+          throw error;
+        }
+
+        const providedToken = parts[1];
+
+        if (providedToken !== expectedApiKey) {
+          log("Authentication failed: Invalid token", true);
+          const error = new Error("Invalid token");
+          (error as any).status = 401;
+          throw error;
+        }
+
+        log("Authentication successful.");
+        // Return session data if needed
+        return { authenticated: true, timestamp: Date.now() };
+      };
+    } else {
+      log("No API_KEY environment variable found. Authentication disabled.");
+    }
+    // --- End Authentication Setup ---
+
+
+    // Create the FastMCP server, adding authenticate function if defined
+    const serverOptions: ConstructorParameters<typeof FastMCP>[0] = {
+      name: "Data-Query-Server",
+      version: "1.0.0", // Use fixed version for now
+    };
+    if (authenticateFunction) {
+      serverOptions.authenticate = authenticateFunction;
+    }
+    const server = new FastMCP(serverOptions);
+
+
+    // Setup DuckDB (which now handles PG connections)
     let pgPool: Pool | null = null;
     if (config.databaseUrl) {
       log("Setting up PostgreSQL connection...");
@@ -241,4 +298,4 @@ if (import.meta.url.includes(process.argv[1])) {
     log(String(error), true);
     process.exit(1);
   });
-} 
+}
