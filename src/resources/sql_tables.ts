@@ -1,8 +1,7 @@
 import { MCPResource } from "mcp-framework";
-import { Pool } from 'pg';
 import { serializeBigInt } from '../utils.js'; // Adjust path as needed
-import { getConfig } from "../config.js"; // Import getConfig
-import { setupPostgres } from "../services/postgres.js"; // Import setupPostgres
+import { setupDuckDB, getDuckDBConnection, POSTGRES_DB_ALIAS } from "../services/duckdb.js"; // Import DuckDB setup
+import type { Connection as DuckDBConnection } from 'duckdb'; // Import DuckDB types
 
 export class SQLTablesResource extends MCPResource { // Changed to export default
   uri = "mcp://db/tables"; // Keep original URI
@@ -10,55 +9,66 @@ export class SQLTablesResource extends MCPResource { // Changed to export defaul
   description = "List all tables and their columns in the Postgres database";
   mimeType = "application/json"; // Define MIME type
 
-  private pgPool!: Pool; // Add definite assignment assertion
-  private pgPoolPromise: Promise<Pool>; // Store the promise
+  private duckDBConnection!: DuckDBConnection; // Store the DuckDB connection
+  private duckDBConnectionPromise: Promise<DuckDBConnection>; // Store the promise
 
-  // Constructor initializes pool internally
+  // Constructor initializes DuckDB connection internally
   constructor() {
     super();
-    const config = getConfig(); // Get validated config
-    if (!config.databaseUrl) { // Check the single URL for simplicity, adjust if needed for multiple URLs
-      throw new Error("Database URL is not configured. Set DATABASE_URL environment variable or --database-url argument.");
-    }
-    const dbUrl = config.databaseUrl;
-
-    // Initialize PG pool asynchronously, store the promise
-    this.pgPoolPromise = setupPostgres(dbUrl).then(pool => {
-      if (!pool) {
-        throw new Error("Failed to initialize PostgreSQL connection pool for SQLTablesResource");
+    // Initialize DuckDB connection asynchronously, store the promise
+    // setupDuckDB handles checking for DATABASE_URL internally
+    this.duckDBConnectionPromise = setupDuckDB().then(conn => {
+      if (!conn) {
+        throw new Error("Failed to initialize DuckDB connection for SQLTablesResource");
       }
-      this.pgPool = pool; // Assign when resolved
-      return pool;
+      this.duckDBConnection = conn; // Assign when resolved
+      return conn;
+    }).catch(error => {
+        console.error("Error during DuckDB setup in SQLTablesResource:", error);
+        throw new Error(`Failed to setup DuckDB: ${error.message}`);
     });
   }
 
-  // Implement the read logic to fetch table and column info
+  // Implement the read logic to fetch table and column info using DuckDB
   async read(): Promise<Array<{ uri: string; mimeType?: string; text: string }>> {
     console.error(`Handling resource request: ${this.uri}`);
     try {
-      // Ensure PG pool is initialized before proceeding
-      const pool = await this.pgPoolPromise;
+      // Ensure DuckDB connection is initialized before proceeding
+      const conn = await this.duckDBConnectionPromise;
 
-      // Query to get tables and columns from information_schema
+      // Query to get tables and columns from the attached PostgreSQL database's information_schema via DuckDB
+      // Use the alias defined in duckdb.ts
       const query = `
         SELECT
           t.table_schema as schema_name,
           t.table_name,
-          json_agg(json_build_object(
+          -- Use DuckDB JSON functions: json_group_array and json_object
+          json_group_array(json_object(
             'column_name', c.column_name,
             'data_type', c.data_type,
             'is_nullable', c.is_nullable = 'YES'
-          ) ORDER BY c.ordinal_position) as columns
-        FROM information_schema.tables t
-        JOIN information_schema.columns c
+          -- Ordering within json_group_array might require subquery/window function in DuckDB if strictly needed.
+          -- Keeping it simple first. If order is critical, query needs adjustment.
+          )) as columns
+        FROM ${POSTGRES_DB_ALIAS}.information_schema.tables t
+        JOIN ${POSTGRES_DB_ALIAS}.information_schema.columns c
           ON t.table_schema = c.table_schema AND t.table_name = c.table_name
-        WHERE t.table_schema NOT IN ('pg_catalog', 'information_schema') -- Exclude system schemas
+        WHERE t.table_schema NOT IN ('pg_catalog', 'information_schema') -- Exclude system schemas from the *attached* PG DB
         GROUP BY t.table_schema, t.table_name
         ORDER BY t.table_schema, t.table_name;
       `;
 
-      const result = await pool.query(query); // Use awaited pool
-      const tablesData = result.rows; // Data is already structured by the query
+      // Execute the query using the DuckDB connection
+      const tablesData = await new Promise<any[]>((resolve, reject) => {
+        conn.all(query, (err, res) => {
+          if (err) {
+            console.error(`DuckDB query error in ${this.uri}:`, err);
+            reject(new Error(`DuckDB query failed: ${err.message}`));
+          } else {
+            resolve(res);
+          }
+        });
+      });
 
       return [
         {
