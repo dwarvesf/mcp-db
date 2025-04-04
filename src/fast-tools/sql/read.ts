@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { Pool } from 'pg';
-import { handlePostgreSQLQuery } from '../../tools/sql/handler.js';
+import { handlePostgreSQLQuery } from '../../legacy-tools/sql/handler.js';
 import { SQLQueryArgs } from '../../types.js';
 import { FastMCPTool } from '../types.js';
 

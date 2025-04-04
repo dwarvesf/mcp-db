@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { Storage } from '@google-cloud/storage';
-import { handleGCSDirectoryTree } from '../../tools/gcs/handler.js';
+import { handleGCSDirectoryTree } from '../../legacy-tools/gcs/handler.js';
 import { GCSDirectoryTreeArgs } from '../../types.js';
 import { FastMCPTool } from '../types.js';
 

@@ -20,7 +20,7 @@
       "init": ["docker compose down", "docker compose up -d"],
       "install": ["npm install"],
       "build": ["npm run build"],
-      "dev": ["npm run migrate:up", "npm run build", "NODE_ENV=development npm run dev -- --transport=sse --port=3001"],
+      "dev": ["npm run migrate:up", "echo 'Cleaning up dist...'; rm -rf dist", "npm run build", "node dist/index.js"],
       "dev-fast": ["npm run migrate:up", "npm run build", "NODE_ENV=development npm run dev:fast -- --transport=sse --port=3001"],
       "debug": ["NODE_ENV=development npm run debug"],
       "debug-fast": ["NODE_ENV=development npm run debug:fast"],

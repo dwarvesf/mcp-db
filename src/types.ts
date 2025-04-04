@@ -10,6 +10,7 @@ export interface DuckDBQueryArgs {
 }
 
 export interface GCSDirectoryTreeArgs {
+  bucket?: string; // Added optional bucket property
   prefix?: string;
   delimiter?: string;
   limit?: number;
@@ -28,4 +29,4 @@ export interface ToolHandlers {
 export interface ServerConfig {
   databaseUrl?: string;
   logLevel?: string;
-} 
+}

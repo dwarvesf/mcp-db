@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { handleSQLTablesResource } from '../../resources/sql/handler.js';
+import { handleSQLTablesResource } from '../../legacy-resources/sql/handler.js';
 import { FastMCPResource } from '../../fast-tools/types.js';
 
 export function createSQLTablesResource(pgPool: Pool | null): FastMCPResource {

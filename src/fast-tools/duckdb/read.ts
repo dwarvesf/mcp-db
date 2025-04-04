@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import pkg from 'duckdb';
 const duckdb = pkg;
-import { handleDuckDBQuery } from '../../tools/duckdb/handler.js';
+import { handleDuckDBQuery } from '../../legacy-tools/duckdb/handler.js';
 import { DuckDBQueryArgs } from '../../types.js';
 import { FastMCPTool } from '../types.js';
 import { serializeBigInt } from '../../utils.js';
@@ -10,7 +10,7 @@ type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
 
 export function createDuckDBReadTool(duckDBConn: DuckDBConnection | null): FastMCPTool<DuckDBQueryArgs> {
   return {
-    name: "duckdb_read_parquet_files",
+    name: "duckdb_read_parquet",
     description: "Query Parquet files with DuckDB SQL (supports complex nested data)",
     parameters: z.object({
       query: z.string().describe("SQL query to execute against Parquet files"),

@@ -294,7 +294,7 @@ DATABASE_URL=postgres://user:password@localhost:5432/db npx github:dwarvesf/mcp-
 
 ### DuckDB Tools
 
--   `duckdb_read_parquet_files`: Query Parquet files
+-   `duckdb_read_parquet`: Query Parquet files
 
 ### GCS Tools
 

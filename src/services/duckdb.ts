@@ -4,7 +4,13 @@ const duckdb = pkg;
 type DuckDBDatabase = InstanceType<typeof duckdb.Database>;
 type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
 
+let connectionInstance: DuckDBConnection | null = null;
+
 export async function setupDuckDB(): Promise<DuckDBConnection> {
+  if (connectionInstance) {
+    return connectionInstance;
+  }
+
   // Initialize database
   const db = await new Promise<DuckDBDatabase>((resolve, reject) => {
     const database = new duckdb.Database(':memory:', (err: Error | null) => {
@@ -70,5 +76,14 @@ export async function setupDuckDB(): Promise<DuckDBConnection> {
     console.error("No GCS credentials provided (GCS_KEY_ID and GCS_SECRET), GCS access may be limited");
   }
 
+  connectionInstance = conn; // Store the connection instance
   return conn;
+}
+
+// Function to retrieve the initialized connection
+export function getDuckDBConnection(): DuckDBConnection {
+  if (!connectionInstance) {
+    throw new Error("DuckDB connection has not been initialized. Call setupDuckDB first.");
+  }
+  return connectionInstance;
 }

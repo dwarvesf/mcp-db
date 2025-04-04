@@ -1,10 +1,8 @@
-import { sqlTablesResource } from './sql/index.js';
-import { gcsObjectsResource } from './gcs/index.js';
+// Import default exports and re-export them named
+import SQLTablesResource from './sql/tables.js';
+import GCSObjectsResource from './gcs/objects.js';
 
-export const resources = [
-  sqlTablesResource,
-  gcsObjectsResource
-];
-
-export * from './sql/index.js';
-export * from './gcs/index.js'; 
+export {
+  SQLTablesResource,
+  GCSObjectsResource
+};

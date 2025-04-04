@@ -3,11 +3,11 @@ import pkg from 'duckdb';
 const duckdb = pkg;
 import { formatErrorResponse, formatSuccessResponse } from './utils.js';
 import { SQLQueryArgs, DuckDBQueryArgs, GCSDirectoryTreeArgs } from './types.js';
-import { handleDuckDBQuery } from './tools/duckdb/handler.js';
-import { handlePostgreSQLQuery } from './tools/sql/handler.js';
-import { handleGCSDirectoryTree } from './tools/gcs/handler.js';
-import { handleSQLTablesResource } from './resources/sql/handler.js';
-import { handleGCSObjectsResource } from './resources/gcs/handler.js';
+import { handleDuckDBQuery } from './legacy-tools/duckdb/handler.js';
+import { handlePostgreSQLQuery } from './legacy-tools/sql/handler.js';
+import { handleGCSDirectoryTree } from './legacy-tools/gcs/handler.js';
+import { handleSQLTablesResource } from './legacy-resources/sql/handler.js';
+import { handleGCSObjectsResource } from './legacy-resources/gcs/handler.js';
 import { Storage } from '@google-cloud/storage';
 
 type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
@@ -18,7 +18,7 @@ export function createToolHandlers(pgPool: Pool | null, duckDBConn: DuckDBConnec
 
     try {
       switch (request.params.name) {
-        case "duckdb_read_parquet_files": {
+        case "duckdb_read_parquet": {
           if (!duckDBConn) {
             throw new Error("DuckDB connection not initialized");
           }

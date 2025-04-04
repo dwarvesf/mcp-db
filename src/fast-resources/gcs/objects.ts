@@ -1,5 +1,5 @@
 import { Storage } from '@google-cloud/storage';
-import { handleGCSObjectsResource } from '../../resources/gcs/handler.js';
+import { handleGCSObjectsResource } from '../../legacy-resources/gcs/handler.js';
 import { FastMCPResource } from '../../fast-tools/types.js';
 
 export function createGCSObjectsResource(

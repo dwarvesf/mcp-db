@@ -1,7 +1,7 @@
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 
 export const duckDBReadTool: Tool = {
-  name: "duckdb_read_parquet_files",
+  name: "duckdb_read_parquet",
   description: "Query Parquet files from HTTPS links or GCS (automatically limited to 1000 rows by default)",
   inputSchema: {
     type: "object",
