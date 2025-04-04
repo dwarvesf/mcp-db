@@ -8,6 +8,9 @@ type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
 
 let connectionInstance: DuckDBConnection | null = null;
 
+// Define and export the alias used for the attached PostgreSQL database
+export const POSTGRES_DB_ALIAS = 'postgres_db';
+
 export async function setupDuckDB(): Promise<DuckDBConnection> {
   if (connectionInstance) {
     return connectionInstance;
@@ -128,9 +131,8 @@ export async function setupDuckDB(): Promise<DuckDBConnection> {
         });
       });
 
-      // Attach the database using the secret
-      // Using a fixed alias 'postgres_db' as discussed before
-      const attachQuery = `ATTACH '' AS postgres_db (TYPE postgres, SECRET pg_secret);`;
+      // Attach the database using the secret and the exported alias
+      const attachQuery = `ATTACH '' AS ${POSTGRES_DB_ALIAS} (TYPE postgres, SECRET pg_secret);`;
       await new Promise<void>((resolve, reject) => {
          conn.exec(attachQuery, (err: Error | null) => {
            if (err) {

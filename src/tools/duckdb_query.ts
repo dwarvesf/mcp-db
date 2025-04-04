@@ -2,8 +2,8 @@ import { MCPTool } from "mcp-framework";
 import { z } from "zod";
 import pkg from 'duckdb';
 const duckdb = pkg;
-import { formatSuccessResponse, serializeBigInt } from '../utils.js';
-import { setupDuckDB } from '../services/duckdb.js';
+import { formatSuccessResponse, formatErrorResponse } from '../utils.js';
+import { setupDuckDB, POSTGRES_DB_ALIAS } from '../services/duckdb.js'; // Import the alias
 
 // Define the input schema using Zod - simplified
 const PostgresQueryInputSchema = z.object({
@@ -16,13 +16,15 @@ type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
 
 export class DuckDBQueryTool extends MCPTool<PostgresQueryInput> {
   name = "duckdb_query";
-  description = `Query data from a PostgreSQL database via DuckDB. Assumes connection is fully managed by setupDuckDB (limited to 1000 rows by default).`;
+  // Use the imported alias in the description
+  description = `Executes a read-only SQL query directly on the attached PostgreSQL database ('${POSTGRES_DB_ALIAS}') using DuckDB. Automatically prefixes unqualified table names with '${POSTGRES_DB_ALIAS}.public.'.`;
 
   // Define schema matching the structure - simplified
   schema = {
     query: {
       type: z.string(),
-      description: `SQL query to execute on the PostgreSQL database configured via setupDuckDB. A LIMIT clause is recommended.`,
+      // Use the imported alias in the description
+      description: `SQL query to execute directly on the attached PostgreSQL database ('${POSTGRES_DB_ALIAS}'). Example: 'SELECT * FROM my_table LIMIT 10'`,
     },
   };
 
@@ -61,11 +63,25 @@ export class DuckDBQueryTool extends MCPTool<PostgresQueryInput> {
       // }
       // Note: We are intentionally not adding the semicolon back. DuckDB usually handles this fine.
 
-      console.error(`Executing query: ${args.query}`);
-      // Execute the query directly
+      // Prefix unqualified table names (simple approach)
+      const pgPrefix = `${POSTGRES_DB_ALIAS}.public.`; // Use the imported alias
+      // Regex to find FROM/JOIN followed by an unqualified table name
+      // Looks for FROM/JOIN, whitespace, then an identifier (letters, numbers, _)
+      // that is NOT followed by a dot (.), indicating it's unqualified.
+      // Using \b for word boundaries to avoid partial matches.
+      const modifiedQuery = args.query.replace(
+        /\b(FROM|JOIN)\s+([a-zA-Z_][a-zA-Z0-9_]*)\b(?!\.)/gi,
+        (match, keyword, tableName) => {
+          console.error(`Prefixing table name: ${tableName} -> ${pgPrefix}${tableName}`);
+          return `${keyword} ${pgPrefix}${tableName}`;
+        }
+      );
+
+      console.error(`Executing modified query: ${modifiedQuery}`);
+      // Execute the modified query directly
       const result = await new Promise((resolve, reject) => {
         // No need to specify alias if DuckDB handles it implicitly
-        duckDBConn!.all(args.query, (err, result) => { // Use finalQuery
+        duckDBConn!.all(modifiedQuery, (err, result) => { // Use modifiedQuery
           if (err) {
             console.error("PostgreSQL query execution error:", err);
             reject(err);
@@ -81,7 +97,8 @@ export class DuckDBQueryTool extends MCPTool<PostgresQueryInput> {
     } catch (error) {
       console.error(`Error executing ${this.name}:`, error);
       // Provide a generic error message as specific alias errors are less likely now
-      throw new Error(`Postgres Query Tool Error: ${error instanceof Error ? error.message : String(error)}`);
+      // throw new Error(`Postgres Query Tool Error: ${error instanceof Error ? error.message : String(error)}`);
+      return formatErrorResponse(error);
     }
     // No finally block for DETACH needed as per user feedback
   }

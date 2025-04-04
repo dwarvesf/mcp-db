@@ -3,7 +3,7 @@ import { z } from "zod";
 import pkg from 'duckdb';
 const duckdb = pkg;
 import { setupDuckDB } from '../services/duckdb.js';
-import { formatSuccessResponse } from "../utils.js";
+import { formatSuccessResponse, formatErrorResponse } from "../utils.js";
 
 // Define the input schema using Zod
 const PostgresInsertInputSchema = z.object({
@@ -16,13 +16,13 @@ type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
 
 export class DuckDBInsertTool extends MCPTool<PostgresInsertInput> {
   name = "duckdb_insert";
-  description = `Execute an INSERT, or other DML/DDL statement on a PostgreSQL database via DuckDB. Assumes connection is fully managed by setupDuckDB.`;
+  description = `Executes an INSERT statement on the attached PostgreSQL database via DuckDB. Only INSERT queries are allowed.`;
 
   // Define schema matching the structure
   schema = {
     query: {
       type: z.string(),
-      description: `SQL DML/DDL query (e.g., INSERT) to execute on the PostgreSQL database configured via setupDuckDB.`,
+      description: `SQL INSERT query to execute on the attached PostgreSQL database. Must start with 'INSERT'.`,
     },
   };
 
@@ -34,14 +34,23 @@ export class DuckDBInsertTool extends MCPTool<PostgresInsertInput> {
     try {
       // Initialize DuckDB connection (assuming it handles all postgres setup)
       duckDBConn = await setupDuckDB();
-      console.error(`DuckDB connection obtained. Assuming PostgreSQL connection is ready for DML/DDL.`);
+      console.error(`DuckDB connection obtained. Ready for INSERT.`);
 
-      // Execute the DML/DDL query directly using exec
+      // Validate that the query is an INSERT statement
+      const queryTrimmed = args.query.trim();
+      if (!queryTrimmed.toUpperCase().startsWith('INSERT')) {
+        // Throw specific error for invalid query type
+        throw new Error("Invalid query type: Only INSERT statements are allowed by this tool.");
+      }
+
+      console.error(`Executing INSERT query: ${queryTrimmed}`);
+      // Execute the INSERT query directly using exec
       await new Promise<void>((resolve, reject) => {
-        duckDBConn!.exec(args.query, (err) => {
+        duckDBConn!.exec(queryTrimmed, (err) => { // Use trimmed query
           if (err) {
-            console.error("PostgreSQL DML/DDL execution error:", err);
-            reject(err);
+            console.error("PostgreSQL INSERT execution error:", err);
+            // Reject with a more specific error message
+            reject(new Error(`Error executing INSERT: ${err.message}`));
           } else {
             console.error(`PostgreSQL DML/DDL query executed successfully`);
             resolve();
@@ -53,7 +62,7 @@ export class DuckDBInsertTool extends MCPTool<PostgresInsertInput> {
       return formatSuccessResponse("Query executed successfully.");
     } catch (error) {
       console.error(`Error executing ${this.name}:`, error);
-      throw new Error(`Postgres Insert Tool Error: ${error instanceof Error ? error.message : String(error)}`);
+      return formatErrorResponse(error);
     }
     // No finally block needed
   }
