@@ -115,24 +115,36 @@ export async function main(): Promise<void> {
     let transportConfig: any;
     const port = args['--port'] || 3001;
     const host = args['--host'] || 'localhost';
-    console.error(`\nConfiguring server for SSE (http-stream) transport on ${host}:${port}...`);
-    // Map 'sse' arg to 'http-stream' type and configure options
-    transportConfig = {
-      type: "sse", // Based on example
-      options: {
-        port: port,
-        host: host,
-        endpoint: "/sse", // Default or make configurable
-        // Add other relevant options from example if needed (cors, auth, etc.)
-        cors: { // Basic CORS for broad compatibility
-          allowOrigin: "*",
-          allowMethods: "GET, POST, DELETE, OPTIONS",
-          allowHeaders: "Content-Type, Accept, Authorization, x-api-key, Mcp-Session-Id, Last-Event-ID",
-          exposeHeaders: "Content-Type, Authorization, x-api-key, Mcp-Session-Id",
-          maxAge: "86400"
-        },
-      }
-    };
+
+    if (args['--transport'] === 'sse') {
+      console.error(`\nConfiguring server for SSE (http-stream) transport on ${host}:${port}...`);
+      // Map 'sse' arg to 'http-stream' type and configure options
+
+      transportConfig = {
+        type: "sse", // Based on example
+        options: {
+          port: port,
+          host: host,
+          // Add other relevant options from example if needed (cors, auth, etc.)
+          cors: { // Basic CORS for broad compatibility
+            allowOrigin: "*",
+            allowMethods: "GET, POST, DELETE, OPTIONS",
+            allowHeaders: "Content-Type, Accept, Authorization, x-api-key, Mcp-Session-Id, Last-Event-ID",
+            exposeHeaders: "Content-Type, Authorization, x-api-key, Mcp-Session-Id",
+            maxAge: "86400"
+          }
+        }
+      };
+    }
+
+    if (args['--transport'] === 'stdio') {
+      transportConfig = {
+        type: "stdio", // Based on example
+        options: {
+          // No additional options needed for stdio
+        }
+      };
+    }
 
     // --- Create and Start Server ---
     console.error("\nCreating MCP server instance...");
@@ -156,7 +168,7 @@ export async function main(): Promise<void> {
         await server.stop(); // Assuming a stop method exists
         console.error("MCP Server stopped");
       } else {
-         console.error("MCP Server instance not found or stop method unavailable.");
+        console.error("MCP Server instance not found or stop method unavailable.");
       }
       if (pgPool) {
         await pgPool.end();

@@ -64,6 +64,7 @@
     "mcp-framework": "^0.2.11",
     "node-pg-migrate": "^7.9.1",
     "pg": "^8.14.1",
+    "pg-connection-string": "^2.7.0",
     "typescript": "^5.3.3",
     "zod": "^3.22.4"
   },

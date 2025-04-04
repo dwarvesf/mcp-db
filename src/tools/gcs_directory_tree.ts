@@ -8,8 +8,8 @@ import { setupGCS } from '../services/gcs.js';
 const GCSDirectoryTreeInputSchema = z.object({
   bucket: z.string().optional().describe("The name of the GCS bucket (overrides default if provided)"),
   prefix: z.string().optional().describe("Optional prefix to filter objects by (e.g., 'folder/')"),
-  delimiter: z.string().describe("Delimiter for hierarchical listing (e.g., '/')"),
-  limit: z.number().describe("Number of results to return"),
+  delimiter: z.string().optional().describe("Delimiter for hierarchical listing (e.g., '/')"),
+  limit: z.number().optional().describe("Number of results to return"),
   pageToken: z.string().optional().describe("Token for pagination (use the nextPageToken from previous response)"),
 });
 
@@ -31,11 +31,11 @@ export class GCSDirectoryTreeTool extends MCPTool<GCSDirectoryTreeInput> {
       description: "Optional prefix to filter objects by (e.g., 'folder/')",
     },
     delimiter: {
-      type: z.string(),
+      type: z.string().optional(),
       description: "Delimiter for hierarchical listing (e.g., '/'), defaults to '/'",
     },
     limit: {
-      type: z.number(),
+      type: z.number().optional(),
       description: "Number of results to return, defaults to 100",
     },
     pageToken: {
@@ -101,12 +101,7 @@ export class GCSDirectoryTreeTool extends MCPTool<GCSDirectoryTreeInput> {
       console.error(`Successfully fetched ${files.length} files and ${directories.length} directories`);
       
       // Format the result according to the expected structure
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(serializeBigInt(result), null, 2)
-        }]
-      };
+      return result;
     } catch (error) {
       console.error(`Error executing ${this.name}:`, error);
       throw new Error(`GCS Directory Tree Tool Error: ${error instanceof Error ? error.message : String(error)}`);

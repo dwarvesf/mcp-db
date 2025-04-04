@@ -10,7 +10,7 @@ export async function setupPostgres(connectionString: string) {
   // Test connection
   try {
     await pool.query('SELECT 1');
-    console.log('Successfully connected to PostgreSQL');
+    console.error('Successfully connected to PostgreSQL');
   } catch (error) {
     console.error('Failed to connect to PostgreSQL:', error);
     throw error;
