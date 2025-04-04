@@ -1,4 +1,4 @@
-import { MCPTool } from "mcp-framework";
+import { MCPTool, logger } from "mcp-framework";
 import { z } from "zod";
 import pkg from 'duckdb';
 const duckdb = pkg;
@@ -28,13 +28,13 @@ export class DuckDBInsertTool extends MCPTool<PostgresInsertInput> {
 
   // Implement the execution logic
   async execute(args: PostgresInsertInput): Promise<any> {
-    console.error(`Handling tool request: ${this.name}`);
+    logger.info(`Handling tool request: ${this.name}`);
     let duckDBConn: DuckDBConnection | null = null;
 
     try {
       // Initialize DuckDB connection (assuming it handles all postgres setup)
       duckDBConn = await setupDuckDB();
-      console.error(`DuckDB connection obtained. Ready for INSERT.`);
+      logger.info(`DuckDB connection obtained. Ready for INSERT.`);
 
       // Validate that the query is an INSERT statement
       const queryTrimmed = args.query.trim();
@@ -43,16 +43,16 @@ export class DuckDBInsertTool extends MCPTool<PostgresInsertInput> {
         throw new Error("Invalid query type: Only INSERT statements are allowed by this tool.");
       }
 
-      console.error(`Executing INSERT query: ${queryTrimmed}`);
+      logger.info(`Executing INSERT query: ${queryTrimmed}`);
       // Execute the INSERT query directly using exec
       await new Promise<void>((resolve, reject) => {
         duckDBConn!.exec(queryTrimmed, (err) => { // Use trimmed query
           if (err) {
-            console.error("PostgreSQL INSERT execution error:", err);
+            logger.error(`PostgreSQL INSERT execution error: ${err}`);
             // Reject with a more specific error message
             reject(new Error(`Error executing INSERT: ${err.message}`));
           } else {
-            console.error(`PostgreSQL DML/DDL query executed successfully`);
+            logger.info(`PostgreSQL DML/DDL query executed successfully`);
             resolve();
           }
         });
@@ -61,7 +61,7 @@ export class DuckDBInsertTool extends MCPTool<PostgresInsertInput> {
       // Format the result according to the expected structure
       return formatSuccessResponse("Query executed successfully.");
     } catch (error) {
-      console.error(`Error executing ${this.name}:`, error);
+      logger.error(`Error executing ${this.name}: ${error}`);
       return formatErrorResponse(error);
     }
     // No finally block needed

@@ -1,8 +1,8 @@
-import { MCPTool } from "mcp-framework";
+import { MCPTool, logger } from "mcp-framework";
 import { z } from "zod";
 import pkg from 'duckdb';
 const duckdb = pkg;
-import { formatSuccessResponse, serializeBigInt } from '../utils.js';
+import { formatErrorResponse, formatSuccessResponse, serializeBigInt } from '../utils.js';
 import { setupDuckDB } from '../services/duckdb.js';
 
 // Define the input schema using Zod
@@ -28,7 +28,7 @@ export class DuckDBReadParquetTool extends MCPTool<DuckDBReadInput> {
 
   // Implement the execution logic
   async execute(args: DuckDBReadInput): Promise<any> {
-    console.error(`Handling tool request: ${this.name}`);
+    logger.info(`Handling tool request: ${this.name}`);
     let duckDBConn: DuckDBConnection | null = null;
 
     try {
@@ -39,10 +39,10 @@ export class DuckDBReadParquetTool extends MCPTool<DuckDBReadInput> {
       const result = await new Promise((resolve, reject) => {
         duckDBConn!.all(args.query, (err, result) => {
           if (err) {
-            console.error("DuckDB query execution error:", err);
+            logger.error(`DuckDB query execution error: ${err}`);
             reject(err);
           } else {
-            console.error(`DuckDB query executed successfully`);
+            logger.info(`DuckDB query executed successfully`);
             resolve(result);
           }
         });
@@ -51,8 +51,8 @@ export class DuckDBReadParquetTool extends MCPTool<DuckDBReadInput> {
       // Format the result according to the expected structure
       return formatSuccessResponse(result);
     } catch (error) {
-      console.error(`Error executing ${this.name}:`, error);
-      throw new Error(`DuckDB Read Tool Error: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error(`Error executing ${this.name}: ${error}`);
+      return formatErrorResponse(error);
     }
   }
 }

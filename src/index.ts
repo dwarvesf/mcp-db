@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { MCPServer } from "mcp-framework"; // Use the correct import based on user feedback
+import { MCPServer, logger } from "mcp-framework"; // Use the correct import based on user feedback
 // Assuming McpError and ErrorCode might not be exported or needed in the same way.
 // If errors occur, we might need to adjust handler error throwing.
 // import { McpError, ErrorCode } from "mcp-framework";
@@ -78,46 +78,46 @@ export async function main(): Promise<void> {
   let server: MCPServer | null = null; // Define server variable
 
   try {
-    console.error("\nStarting Data Query MCP Server (using mcp-framework)...");
+    logger.info("\nStarting Data Query MCP Server (using mcp-framework)...");
 
     // Validate configuration
-    console.error("Validating configuration...");
+    logger.info("Validating configuration...");
     const config = validateConfig(args);
-    console.error("Configuration validated successfully");
+    logger.info("Configuration validated successfully");
 
     // Setup PostgreSQL
     if (config.databaseUrl) {
-      console.error("\nSetting up PostgreSQL connection...");
+      logger.info("\nSetting up PostgreSQL connection...");
       pgPool = await setupPostgres(config.databaseUrl);
-      console.error("PostgreSQL connection established successfully");
+      logger.info("PostgreSQL connection established successfully");
     }
 
     // Setup DuckDB
-    console.error("\nSetting up DuckDB...");
+    logger.info("\nSetting up DuckDB...");
     duckDBConn = await setupDuckDB();
-    console.error("DuckDB setup completed successfully");
+    logger.info("DuckDB setup completed successfully");
 
     // Setup GCS
-    console.error("\nSetting up Google Cloud Storage...");
+    logger.info("\nSetting up Google Cloud Storage...");
     gcs = await setupGCS();
     if (gcs) {
-      console.error("GCS setup completed successfully");
+      logger.info("GCS setup completed successfully");
       if (config.gcsBucket) {
-        console.error(`Using GCS bucket: ${config.gcsBucket}`);
+        logger.info(`Using GCS bucket: ${config.gcsBucket}`);
       } else {
-        console.error("Warning: No GCS bucket configured");
+        logger.warn("Warning: No GCS bucket configured");
       }
     } else {
-      console.error("Warning: GCS setup skipped (no credentials provided)");
+      logger.warn("Warning: GCS setup skipped (no credentials provided)");
     }
 
     // --- Configure Transport ---
     let transportConfig: any;
     const port = args['--port'] || 3001;
-    const host = args['--host'] || 'localhost';
+    const host = args['--host'] || '0.0.0.0';
 
     if (args['--transport'] === 'sse') {
-      console.error(`\nConfiguring server for SSE (http-stream) transport on ${host}:${port}...`);
+      logger.info(`\nConfiguring server for SSE (http-stream) transport on ${host}:${port}...`);
       // Map 'sse' arg to 'http-stream' type and configure options
 
       transportConfig = {
@@ -147,36 +147,36 @@ export async function main(): Promise<void> {
     }
 
     // --- Create and Start Server ---
-    console.error("\nCreating MCP server instance...");
+    logger.info("\nCreating MCP server instance...");
     server = new MCPServer({
       // Tools/Resources/Capabilities are not constructor args. Registration likely happens via methods.
       transport: transportConfig,
       // Add logger configuration if needed
       // logger: console,
     });
-    console.error("Server instance created");
-    console.error("Starting server...");
+    logger.info("Server instance created");
+    logger.info("Starting server...");
     await server.start(); // Use the start method from the example
-    console.error("\nServer is running and listening for requests");
-    console.error("Press Ctrl+C to stop the server\n");
+    logger.info("\nServer is running and listening for requests");
+    logger.info("Press Ctrl+C to stop the server\n");
 
 
     // --- Graceful Shutdown ---
     const cleanup = async () => {
-      console.error("\nShutting down server...");
+      logger.info("\nShutting down server...");
       if (server && typeof server.stop === 'function') {
         await server.stop(); // Assuming a stop method exists
-        console.error("MCP Server stopped");
+        logger.info("MCP Server stopped");
       } else {
-        console.error("MCP Server instance not found or stop method unavailable.");
+        logger.info("MCP Server instance not found or stop method unavailable.");
       }
       if (pgPool) {
         await pgPool.end();
-        console.error("PostgreSQL connection closed");
+        logger.info("PostgreSQL connection closed");
       }
       // Add DuckDB cleanup if needed
       // if (duckDBConn) { ... }
-      console.error("Cleanup complete");
+      logger.info("Cleanup complete");
       process.exit(0);
     };
 
@@ -188,20 +188,20 @@ export async function main(): Promise<void> {
     // process.stdin.resume(); // May not be needed if server.start() blocks
 
   } catch (error: unknown) {
-    console.error("\nFatal error during server lifecycle:");
+    logger.info("\nFatal error during server lifecycle:");
     if (error instanceof Error) {
-      console.error("Message:", error.message);
+      logger.error(`Message: ${error.message}`);
       if (error.stack) {
-        console.error("Stack trace:");
-        console.error(error.stack);
+        logger.info("Stack trace:");
+        logger.info(error.stack);
       }
     } else {
-      console.error("Unknown error:", error);
+      logger.error(`Unknown error: ${error}`);
     }
     // Ensure cleanup runs even on startup error
-    if (pgPool) await pgPool.end().catch(e => console.error("Error closing PG pool on startup failure:", e));
+    if (pgPool) await pgPool.end().catch(e => logger.error(`Error closing PG pool on startup failure:  ${e}`));
     // Attempt server stop if it was initialized
-    if (server && typeof server.stop === 'function') await server.stop().catch(e => console.error("Error stopping server on startup failure:", e));
+    if (server && typeof server.stop === 'function') await server.stop().catch(e => logger.error(`Error stopping server on startup failure: ${e}`));
     process.exit(1);
   }
 }

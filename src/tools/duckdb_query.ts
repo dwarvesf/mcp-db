@@ -1,4 +1,4 @@
-import { MCPTool } from "mcp-framework";
+import { MCPTool,logger } from "mcp-framework";
 import { z } from "zod";
 import pkg from 'duckdb';
 const duckdb = pkg;
@@ -30,13 +30,13 @@ export class DuckDBQueryTool extends MCPTool<PostgresQueryInput> {
 
   // Implement the execution logic
   async execute(args: PostgresQueryInput): Promise<any> {
-    console.error(`Handling tool request: ${this.name}`);
+    logger.info(`Handling tool request: ${this.name}`);
     let duckDBConn: DuckDBConnection | null = null;
 
     try {
       // Initialize DuckDB connection (assuming it handles all postgres setup)
       duckDBConn = await setupDuckDB();
-      console.error(`DuckDB connection obtained. Assuming PostgreSQL connection is ready.`);
+      logger.info(`DuckDB connection obtained. Assuming PostgreSQL connection is ready.`);
 
       // // Prepare the query, handling potential trailing semicolon and adding LIMIT
       // let baseQuery = args.query.trim();
@@ -52,13 +52,13 @@ export class DuckDBQueryTool extends MCPTool<PostgresQueryInput> {
       // // Add LIMIT only to SELECT queries that don't already have one
       // if (isSelectQuery && !hasLimit) {
       //   finalQuery = `${baseQuery} LIMIT 1000`;
-      //   console.error("Automatically added LIMIT 1000 to SELECT query.");
+      //   logger.info("Automatically added LIMIT 1000 to SELECT query.");
       // } else {
       //   finalQuery = baseQuery; // Use the original query (minus trailing semicolon)
       //   if (!isSelectQuery) {
-      //     console.error("Query is not a SELECT statement, LIMIT not added.");
+      //     logger.info("Query is not a SELECT statement, LIMIT not added.");
       //   } else if (hasLimit) {
-      //     console.error("Query already contains LIMIT, not adding automatically.");
+      //     logger.info("Query already contains LIMIT, not adding automatically.");
       //   }
       // }
       // Note: We are intentionally not adding the semicolon back. DuckDB usually handles this fine.
@@ -72,21 +72,21 @@ export class DuckDBQueryTool extends MCPTool<PostgresQueryInput> {
       const modifiedQuery = args.query.replace(
         /\b(FROM|JOIN)\s+([a-zA-Z_][a-zA-Z0-9_]*)\b(?!\.)/gi,
         (match, keyword, tableName) => {
-          console.error(`Prefixing table name: ${tableName} -> ${pgPrefix}${tableName}`);
+          logger.info(`Prefixing table name: ${tableName} -> ${pgPrefix}${tableName}`);
           return `${keyword} ${pgPrefix}${tableName}`;
         }
       );
 
-      console.error(`Executing modified query: ${modifiedQuery}`);
+      logger.info(`Executing modified query: ${modifiedQuery}`);
       // Execute the modified query directly
       const result = await new Promise((resolve, reject) => {
         // No need to specify alias if DuckDB handles it implicitly
         duckDBConn!.all(modifiedQuery, (err, result) => { // Use modifiedQuery
           if (err) {
-            console.error("PostgreSQL query execution error:", err);
+            logger.error(`PostgreSQL query execution error: ${err}`);
             reject(err);
           } else {
-            console.error(`PostgreSQL query executed successfully`);
+            logger.info(`PostgreSQL query executed successfully`);
             resolve(result);
           }
         });
@@ -95,7 +95,7 @@ export class DuckDBQueryTool extends MCPTool<PostgresQueryInput> {
       // Format the result according to the expected structure
       return formatSuccessResponse(result);
     } catch (error) {
-      console.error(`Error executing ${this.name}:`, error);
+      logger.error(`Error executing ${this.name}: ${error}`);
       // Provide a generic error message as specific alias errors are less likely now
       // throw new Error(`Postgres Query Tool Error: ${error instanceof Error ? error.message : String(error)}`);
       return formatErrorResponse(error);

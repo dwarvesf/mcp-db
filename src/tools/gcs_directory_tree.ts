@@ -1,4 +1,4 @@
-import { MCPTool } from "mcp-framework";
+import { MCPTool, logger } from "mcp-framework";
 import { z } from "zod";
 import { Storage, GetFilesOptions } from '@google-cloud/storage';
 import { setupGCS } from '../services/gcs.js';
@@ -48,7 +48,7 @@ export class GCSDirectoryTreeTool extends MCPTool<GCSDirectoryTreeInput> {
 
   // Implement the execution logic
   async execute(args: GCSDirectoryTreeInput): Promise<any> {
-    console.error(`Handling tool request: ${this.name}`);
+    logger.info(`Handling tool request: ${this.name}`);
     let gcs: Storage | null = null;
     let defaultBucket: string | undefined;
 
@@ -96,12 +96,12 @@ export class GCSDirectoryTreeTool extends MCPTool<GCSDirectoryTreeInput> {
         }
       };
 
-      console.error(`Successfully fetched ${files.length} files and ${directories.length} directories`);
+      logger.info(`Successfully fetched ${files.length} files and ${directories.length} directories`);
 
       // Format the result according to the expected structure
       return formatSuccessResponse(result);
     } catch (error) {
-      console.error(`Error executing ${this.name}:`, error);
+      logger.error(`Error executing ${this.name}: ${error}`);
       throw new Error(`GCS Directory Tree Tool Error: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
