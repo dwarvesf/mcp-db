@@ -29,6 +29,7 @@ const args = arg({
   '--transport': String,
   '--port': Number,
   '--host': String,
+  '--timeout': Number,
 });
 
 // Enable colors by default
@@ -57,6 +58,7 @@ if (args['--help']) {
     --transport=TYPE      Transport type (stdio or sse) (default: stdio)
     --port=PORT           HTTP server port (default: 3001)
     --host=HOST           HTTP server host (default: localhost)
+    --timeout=TIMEOUT     Request timeout in milliseconds (default: 300000)
     -v, --version         Show version information
     -h, --help            Show this help message
 
@@ -65,6 +67,7 @@ if (args['--help']) {
     LOG_LEVEL             Logging level (default: info)
     GCP_SERVICE_ACCOUNT   Base64 encoded GCP service account key (optional)
     GCS_BUCKET            Default GCS bucket name (optional)
+    TIMEOUT               Request timeout in milliseconds (default: 300000)
 
   Example:
     export DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
@@ -86,6 +89,7 @@ export async function main(): Promise<void> {
     const server = new FastMCP({
       name: "Data-Query-Server",
       version: "1.0.0",
+      timeout: config.timeout // Use the timeout from config
     });
 
     // Setup PostgreSQL
@@ -149,7 +153,8 @@ export async function main(): Promise<void> {
         transportType: "sse",
         sse: {
           endpoint: "/sse",
-          port: args['--port'] || 3001
+          port: args['--port'] || 3001,
+          timeout: config.timeout
         }
       });
       

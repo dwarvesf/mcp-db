@@ -7,6 +7,7 @@ export interface SSETransportOptions {
   port?: number;
   host?: string;
   keepAliveInterval?: number; // Interval in ms to send keep-alive pings
+  timeout?: number; // Request timeout in milliseconds
 }
 
 export class SSETransport {
@@ -20,7 +21,8 @@ export class SSETransport {
     this.options = {
       port: options.port || 3001,
       host: options.host || '0.0.0.0', // Changed from localhost to 0.0.0.0
-      keepAliveInterval: options.keepAliveInterval || 30000 // Default: 30 seconds
+      keepAliveInterval: options.keepAliveInterval || 30000, // Default: 30 seconds
+      timeout: options.timeout || 300000 // Default: 5 minutes
     };
 
     // Enable CORS with proper options
@@ -41,6 +43,12 @@ export class SSETransport {
 
     // SSE endpoint
     this.app.get('/sse', (req: Request, res: Response) => {
+      // Set response timeout if configured
+      if (this.options.timeout) {
+        req.setTimeout(this.options.timeout);
+        res.setTimeout(this.options.timeout);
+      }
+      
       const transport = new SSEServerTransport('/messages', res);
       this.transports[transport.sessionId] = transport;
       
@@ -70,6 +78,12 @@ export class SSETransport {
 
     // Message endpoint
     this.app.post('/messages', async (req: Request, res: Response) => {
+      // Set response timeout if configured
+      if (this.options.timeout) {
+        req.setTimeout(this.options.timeout);
+        res.setTimeout(this.options.timeout);
+      }
+      
       const sessionId = req.query.sessionId as string;
       if (!sessionId) {
         res.status(400).send('Missing sessionId parameter');
@@ -95,6 +109,11 @@ export class SSETransport {
     this.server = server;
     const port = this.options.port || 3001;
     const host = this.options.host || '0.0.0.0'; // Changed from localhost to 0.0.0.0
+    
+    // Apply server timeout
+    if (this.options.timeout) {
+      this.app.set('timeout', this.options.timeout);
+    }
     
     return new Promise((resolve) => {
       this.app.listen(port, host, () => {
