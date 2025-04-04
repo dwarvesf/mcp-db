@@ -2,7 +2,7 @@ import { MCPTool } from "mcp-framework";
 import { z } from "zod";
 import pkg from 'duckdb';
 const duckdb = pkg;
-import { serializeBigInt } from '../utils.js';
+import { formatSuccessResponse, serializeBigInt } from '../utils.js';
 import { setupDuckDB } from '../services/duckdb.js';
 
 // Define the input schema using Zod - simplified
@@ -54,9 +54,9 @@ export class DuckDBQueryTool extends MCPTool<PostgresQueryInput> {
       } else {
         finalQuery = baseQuery; // Use the original query (minus trailing semicolon)
         if (!isSelectQuery) {
-           console.error("Query is not a SELECT statement, LIMIT not added.");
+          console.error("Query is not a SELECT statement, LIMIT not added.");
         } else if (hasLimit) {
-           console.error("Query already contains LIMIT, not adding automatically.");
+          console.error("Query already contains LIMIT, not adding automatically.");
         }
       }
       // Note: We are intentionally not adding the semicolon back. DuckDB usually handles this fine.
@@ -75,13 +75,8 @@ export class DuckDBQueryTool extends MCPTool<PostgresQueryInput> {
         });
       });
 
-      // Format the result
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(serializeBigInt(result), null, 2)
-        }]
-      };
+      // Format the result according to the expected structure
+      return formatSuccessResponse(result);
     } catch (error) {
       console.error(`Error executing ${this.name}:`, error);
       // Provide a generic error message as specific alias errors are less likely now

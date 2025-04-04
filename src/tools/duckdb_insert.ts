@@ -3,6 +3,7 @@ import { z } from "zod";
 import pkg from 'duckdb';
 const duckdb = pkg;
 import { setupDuckDB } from '../services/duckdb.js';
+import { formatSuccessResponse } from "../utils.js";
 
 // Define the input schema using Zod
 const PostgresInsertInputSchema = z.object({
@@ -48,13 +49,8 @@ export class DuckDBInsertTool extends MCPTool<PostgresInsertInput> {
         });
       });
 
-      // Format the success result
-      return {
-        content: [{
-          type: "text",
-          text: "Query executed successfully."
-        }]
-      };
+      // Format the result according to the expected structure
+      return formatSuccessResponse("Query executed successfully.");
     } catch (error) {
       console.error(`Error executing ${this.name}:`, error);
       throw new Error(`Postgres Insert Tool Error: ${error instanceof Error ? error.message : String(error)}`);

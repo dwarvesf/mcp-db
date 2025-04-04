@@ -1,28 +1,44 @@
 import { MCPResource } from "mcp-framework";
 import { Pool } from 'pg';
-import { serializeBigInt } from '../../utils.js'; // Adjust path as needed
+import { serializeBigInt } from '../utils.js'; // Adjust path as needed
+import { getConfig } from "../config.js"; // Import getConfig
+import { setupPostgres } from "../services/postgres.js"; // Import setupPostgres
 
-export default class SQLTablesResource extends MCPResource { // Changed to export default
+export class SQLTablesResource extends MCPResource { // Changed to export default
   uri = "mcp://db/tables"; // Keep original URI
   name = "sql_tables";
   description = "List all tables and their columns in the Postgres database";
   mimeType = "application/json"; // Define MIME type
 
-  private pgPool: Pool;
+  private pgPool!: Pool; // Add definite assignment assertion
+  private pgPoolPromise: Promise<Pool>; // Store the promise
 
-  // Constructor to receive dependencies
-  constructor(pgPool: Pool) {
+  // Constructor initializes pool internally
+  constructor() {
     super();
-    if (!pgPool) {
-      throw new Error("PostgreSQL connection pool is required for SQLTablesResource");
+    const config = getConfig(); // Get validated config
+    if (!config.databaseUrl) { // Check the single URL for simplicity, adjust if needed for multiple URLs
+      throw new Error("Database URL is not configured. Set DATABASE_URL environment variable or --database-url argument.");
     }
-    this.pgPool = pgPool;
+    const dbUrl = config.databaseUrl;
+
+    // Initialize PG pool asynchronously, store the promise
+    this.pgPoolPromise = setupPostgres(dbUrl).then(pool => {
+      if (!pool) {
+        throw new Error("Failed to initialize PostgreSQL connection pool for SQLTablesResource");
+      }
+      this.pgPool = pool; // Assign when resolved
+      return pool;
+    });
   }
 
   // Implement the read logic to fetch table and column info
   async read(): Promise<Array<{ uri: string; mimeType?: string; text: string }>> {
     console.error(`Handling resource request: ${this.uri}`);
     try {
+      // Ensure PG pool is initialized before proceeding
+      const pool = await this.pgPoolPromise;
+
       // Query to get tables and columns from information_schema
       const query = `
         SELECT
@@ -41,7 +57,7 @@ export default class SQLTablesResource extends MCPResource { // Changed to expor
         ORDER BY t.table_schema, t.table_name;
       `;
 
-      const result = await this.pgPool.query(query);
+      const result = await pool.query(query); // Use awaited pool
       const tablesData = result.rows; // Data is already structured by the query
 
       return [
@@ -57,3 +73,5 @@ export default class SQLTablesResource extends MCPResource { // Changed to expor
     }
   }
 }
+
+export default SQLTablesResource; // Export the class as default

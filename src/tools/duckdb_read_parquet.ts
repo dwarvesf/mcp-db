@@ -2,7 +2,7 @@ import { MCPTool } from "mcp-framework";
 import { z } from "zod";
 import pkg from 'duckdb';
 const duckdb = pkg;
-import { serializeBigInt } from '../utils.js';
+import { formatSuccessResponse, serializeBigInt } from '../utils.js';
 import { setupDuckDB } from '../services/duckdb.js';
 
 // Define the input schema using Zod
@@ -47,14 +47,9 @@ export class DuckDBReadParquetTool extends MCPTool<DuckDBReadInput> {
           }
         });
       });
-      
+
       // Format the result according to the expected structure
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(serializeBigInt(result), null, 2)
-        }]
-      };
+      return formatSuccessResponse(result);
     } catch (error) {
       console.error(`Error executing ${this.name}:`, error);
       throw new Error(`DuckDB Read Tool Error: ${error instanceof Error ? error.message : String(error)}`);

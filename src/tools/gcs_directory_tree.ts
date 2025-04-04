@@ -1,8 +1,8 @@
 import { MCPTool } from "mcp-framework";
 import { z } from "zod";
 import { Storage, GetFilesOptions } from '@google-cloud/storage';
-import { serializeBigInt } from '../utils.js';
 import { setupGCS } from '../services/gcs.js';
+import { formatSuccessResponse } from "../utils.js";
 
 // Define the input schema using Zod
 const GCSDirectoryTreeInputSchema = z.object({
@@ -20,6 +20,8 @@ export class GCSDirectoryTreeTool extends MCPTool<GCSDirectoryTreeInput> {
   name = "gcs_directory_tree";
   description = "Fetch the directory tree structure from GCS bucket with pagination support";
 
+  defaultBucket = process.env.GCS_BUCKET;
+
   // Define the schema property using the nested structure with Zod types.
   schema = {
     bucket: {
@@ -31,11 +33,11 @@ export class GCSDirectoryTreeTool extends MCPTool<GCSDirectoryTreeInput> {
       description: "Optional prefix to filter objects by (e.g., 'folder/')",
     },
     delimiter: {
-      type: z.string().optional(),
+      type: z.string().optional().default('/'),
       description: "Delimiter for hierarchical listing (e.g., '/'), defaults to '/'",
     },
     limit: {
-      type: z.number().optional(),
+      type: z.number().optional().default(100),
       description: "Number of results to return, defaults to 100",
     },
     pageToken: {
@@ -53,7 +55,7 @@ export class GCSDirectoryTreeTool extends MCPTool<GCSDirectoryTreeInput> {
     try {
       // Initialize GCS client
       gcs = await setupGCS();
-      
+
       // Get default bucket from environment
       defaultBucket = process.env.GCS_BUCKET;
 
@@ -62,14 +64,10 @@ export class GCSDirectoryTreeTool extends MCPTool<GCSDirectoryTreeInput> {
         throw new Error("GCS bucket name is required (either via args or GCS_BUCKET environment variable)");
       }
 
-      // Use the provided values or defaults
-      const delimiter = args.delimiter || '/';
-      const limit = args.limit || 100;
-
       const options: GetFilesOptions = {
         prefix: args.prefix,
-        delimiter: delimiter,
-        maxResults: limit,
+        delimiter: args.delimiter,
+        maxResults: args.limit,
         pageToken: args.pageToken,
         autoPaginate: false, // Important for manual pagination control
       };
@@ -77,7 +75,7 @@ export class GCSDirectoryTreeTool extends MCPTool<GCSDirectoryTreeInput> {
       // Get the bucket and files
       const bucket = gcs.bucket(bucketName);
       const [files, nextQuery, apiResponse] = await bucket.getFiles(options);
-      
+
       // Extract directories from API response
       const typedResponse = apiResponse as { prefixes?: string[] };
       const directories = typedResponse.prefixes || [];
@@ -99,9 +97,9 @@ export class GCSDirectoryTreeTool extends MCPTool<GCSDirectoryTreeInput> {
       };
 
       console.error(`Successfully fetched ${files.length} files and ${directories.length} directories`);
-      
+
       // Format the result according to the expected structure
-      return result;
+      return formatSuccessResponse(result);
     } catch (error) {
       console.error(`Error executing ${this.name}:`, error);
       throw new Error(`GCS Directory Tree Tool Error: ${error instanceof Error ? error.message : String(error)}`);
