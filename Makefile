@@ -32,17 +32,9 @@ build:
 dev:
 	devbox run dev
 
-## Run the FastMCP server in development mode
-dev-fast:
-	devbox run dev-fast
-
 ## debug the server in development mode
 debug:
 	devbox run debug
-
-## debug the FastMCP server in development mode
-debug-fast:
-	devbox run debug-fast
 
 ## Clean the build directory
 clean:

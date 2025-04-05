@@ -1,1 +1,0 @@
-export { gcsObjectsResource } from './objects.js'; 

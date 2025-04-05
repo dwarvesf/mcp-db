@@ -23,6 +23,8 @@ const ConfigSchema = z.object({
 
 export type AppConfig = z.infer<typeof ConfigSchema>;
 
+let validatedConfigInstance: AppConfig | null = null;
+
 // Helper function to parse alias=url pairs
 function parseDatabaseUrls(inputs: string[]): Record<string, string> | null {
   if (!inputs || inputs.length === 0) {
@@ -134,7 +136,9 @@ export function validateConfig(args: any): AppConfig {
       apiKey // Include apiKey in the object to be validated
     };
 
-    return ConfigSchema.parse(configToValidate);
+    const parsedConfig = ConfigSchema.parse(configToValidate);
+    validatedConfigInstance = parsedConfig; // Store the validated config
+    return parsedConfig;
 
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -146,4 +150,12 @@ export function validateConfig(args: any): AppConfig {
     }
     throw error;
   }
+}
+
+// Function to retrieve the validated configuration
+export function getConfig(): AppConfig {
+  if (!validatedConfigInstance) {
+    throw new Error("Configuration has not been validated yet. Call validateConfig first.");
+  }
+  return validatedConfigInstance;
 }
