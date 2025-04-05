@@ -5,16 +5,13 @@ const duckdb = pkg;
 import { formatSuccessResponse, formatErrorResponse } from '../utils.js';
 import { setupDuckDB, POSTGRES_DB_ALIAS } from '../services/duckdb.js'; // Import the alias
 
-// Define the input schema using Zod - simplified
-const PostgresQueryInputSchema = z.object({
-  query: z.string().describe("SQL query to execute on the PostgreSQL database configured via setupDuckDB. A LIMIT clause is recommended."),
-});
+// Remove separate Zod schema definition and type inference
 
-// Infer the input type from the Zod schema
-type PostgresQueryInput = z.infer<typeof PostgresQueryInputSchema>;
 type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
 
-export class DuckDBQueryTool extends MCPTool<PostgresQueryInput> {
+// Use default generic type for MCPTool.
+// The actual input type for execute will be validated by the base class using the 'schema' property below.
+export class DuckDBQueryTool extends MCPTool {
   name = "duckdb_query";
   // Use the imported alias in the description
   description = `Executes a read-only SQL query directly on the attached PostgreSQL database ('${POSTGRES_DB_ALIAS}') using DuckDB. Automatically prefixes unqualified table names with '${POSTGRES_DB_ALIAS}.public.'.`;
@@ -29,7 +26,8 @@ export class DuckDBQueryTool extends MCPTool<PostgresQueryInput> {
   };
 
   // Implement the execution logic
-  async execute(args: PostgresQueryInput): Promise<any> {
+  // The 'args' type will be validated by the base MCPTool class against the 'schema' property.
+  async execute(args: { query: string }): Promise<any> {
     logger.info(`Handling tool request: ${this.name}`);
     let duckDBConn: DuckDBConnection | null = null;
 

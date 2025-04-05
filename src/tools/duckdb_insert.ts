@@ -5,16 +5,13 @@ const duckdb = pkg;
 import { setupDuckDB } from '../services/duckdb.js';
 import { formatSuccessResponse, formatErrorResponse } from "../utils.js";
 
-// Define the input schema using Zod
-const PostgresInsertInputSchema = z.object({
-  query: z.string().describe("SQL DML/DDL query (e.g., INSERT) to execute on the PostgreSQL database configured via setupDuckDB."),
-});
+// Remove separate Zod schema definition and type inference
 
-// Infer the input type from the Zod schema
-type PostgresInsertInput = z.infer<typeof PostgresInsertInputSchema>;
 type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
 
-export class DuckDBInsertTool extends MCPTool<PostgresInsertInput> {
+// Use default generic type for MCPTool or a simpler one if needed.
+// The actual input type for execute will be validated by the base class using the 'schema' property below.
+export class DuckDBInsertTool extends MCPTool {
   name = "duckdb_insert";
   description = `Executes an INSERT statement on the attached PostgreSQL database via DuckDB. Only INSERT queries are allowed.`;
 
@@ -27,7 +24,9 @@ export class DuckDBInsertTool extends MCPTool<PostgresInsertInput> {
   };
 
   // Implement the execution logic
-  async execute(args: PostgresInsertInput): Promise<any> {
+  // The 'args' type will be validated by the base MCPTool class against the 'schema' property.
+  // We can use Record<string, any> or a more specific type if known, but validation happens before this.
+  async execute(args: { query: string }): Promise<any> {
     logger.info(`Handling tool request: ${this.name}`);
     let duckDBConn: DuckDBConnection | null = null;
 

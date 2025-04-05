@@ -4,19 +4,11 @@ import { Storage, GetFilesOptions } from '@google-cloud/storage';
 import { setupGCS } from '../services/gcs.js';
 import { formatSuccessResponse } from "../utils.js";
 
-// Define the input schema using Zod
-const GCSDirectoryTreeInputSchema = z.object({
-  bucket: z.string().optional().describe("The name of the GCS bucket (overrides default if provided)"),
-  prefix: z.string().optional().describe("Optional prefix to filter objects by (e.g., 'folder/')"),
-  delimiter: z.string().optional().describe("Delimiter for hierarchical listing (e.g., '/')"),
-  limit: z.number().optional().describe("Number of results to return"),
-  pageToken: z.string().optional().describe("Token for pagination (use the nextPageToken from previous response)"),
-});
+// Remove separate Zod schema definition and type inference
 
-// Infer the input type from the Zod schema
-type GCSDirectoryTreeInput = z.infer<typeof GCSDirectoryTreeInputSchema>;
-
-export class GCSDirectoryTreeTool extends MCPTool<GCSDirectoryTreeInput> {
+// Use default generic type for MCPTool.
+// The actual input type for execute will be validated by the base class using the 'schema' property below.
+export class GCSDirectoryTreeTool extends MCPTool {
   name = "gcs_directory_tree";
   description = "Fetch the directory tree structure from GCS bucket with pagination support";
 
@@ -47,7 +39,9 @@ export class GCSDirectoryTreeTool extends MCPTool<GCSDirectoryTreeInput> {
   };
 
   // Implement the execution logic
-  async execute(args: GCSDirectoryTreeInput): Promise<any> {
+  // The 'args' type will be validated by the base MCPTool class against the 'schema' property.
+  // Define a specific type here for clarity within the method if desired.
+  async execute(args: { bucket?: string; prefix?: string; delimiter?: string; limit?: number; pageToken?: string }): Promise<any> {
     logger.info(`Handling tool request: ${this.name}`);
     let gcs: Storage | null = null;
     let defaultBucket: string | undefined;

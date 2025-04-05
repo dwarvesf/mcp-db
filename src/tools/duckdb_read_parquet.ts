@@ -5,16 +5,13 @@ const duckdb = pkg;
 import { formatErrorResponse, formatSuccessResponse, serializeBigInt } from '../utils.js';
 import { setupDuckDB } from '../services/duckdb.js';
 
-// Define the input schema using Zod
-const DuckDBReadInputSchema = z.object({
-  query: z.string().describe("SQL query to execute on Parquet files. A LIMIT clause will be automatically added if not present."),
-});
+// Remove separate Zod schema definition and type inference
 
-// Infer the input type from the Zod schema
-type DuckDBReadInput = z.infer<typeof DuckDBReadInputSchema>;
 type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
 
-export class DuckDBReadParquetTool extends MCPTool<DuckDBReadInput> {
+// Use default generic type for MCPTool.
+// The actual input type for execute will be validated by the base class using the 'schema' property below.
+export class DuckDBReadParquetTool extends MCPTool {
   name = "duckdb_read_parquet";
   description = "Query Parquet files from HTTPS links or GCS (automatically limited to 1000 rows by default)";
 
@@ -27,7 +24,8 @@ export class DuckDBReadParquetTool extends MCPTool<DuckDBReadInput> {
   };
 
   // Implement the execution logic
-  async execute(args: DuckDBReadInput): Promise<any> {
+  // The 'args' type will be validated by the base MCPTool class against the 'schema' property.
+  async execute(args: { query: string }): Promise<any> {
     logger.info(`Handling tool request: ${this.name}`);
     let duckDBConn: DuckDBConnection | null = null;
 
