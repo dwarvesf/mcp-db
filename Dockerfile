@@ -44,12 +44,7 @@ USER appuser
 # Set executable permissions directly during copy
 COPY --chmod=0755 <<EOF /app/entrypoint.sh
 #!/bin/sh
-if [ "\$1" = "--fast" ]; then
-  shift
-  exec node ./dist/fast-cli.js "\$@"
-else
-  exec node ./dist/cli.js "\$@"
-fi
+exec node ./dist/index.js "\$@"
 EOF
 
 # Use ENTRYPOINT to run our script
