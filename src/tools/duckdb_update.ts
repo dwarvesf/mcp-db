@@ -5,21 +5,21 @@ const duckdb = pkg;
 import { setupDuckDB } from '../services/duckdb.js';
 import { formatSuccessResponse, formatErrorResponse } from "../utils.js";
 
-// Remove separate Zod schema definition and type inference
-
 type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
+
+// Remove separate Zod schema definition and type inference
 
 // Use default generic type for MCPTool or a simpler one if needed.
 // The actual input type for execute will be validated by the base class using the 'schema' property below.
-export class DuckDBInsertTool extends MCPTool {
-  name = "duckdb_insert";
-  description = `Executes an INSERT statement on the attached PostgreSQL database via DuckDB. Only INSERT queries are allowed.`;
+export class DuckDBUpdateTool extends MCPTool {
+  name = "duckdb_update";
+  description = `Executes an UPDATE statement on the attached PostgreSQL database via DuckDB. Only UPDATE queries are allowed.`;
 
   // Define schema matching the structure
   schema = {
     query: {
       type: z.string(),
-      description: `SQL INSERT query to execute on the attached PostgreSQL database. Must start with 'INSERT'.`,
+      description: `SQL UPDATE query to execute on the attached PostgreSQL database. Must start with 'UPDATE'.`,
     },
   };
 
@@ -33,24 +33,27 @@ export class DuckDBInsertTool extends MCPTool {
     try {
       // Initialize DuckDB connection (assuming it handles all postgres setup)
       duckDBConn = await setupDuckDB();
-      logger.info(`DuckDB connection obtained. Ready for INSERT.`);
+      logger.info(`DuckDB connection obtained. Ready for UPDATE.`);
 
-      // Validate that the query is an INSERT statement
+      // Validate that the query is an UPDATE statement
       const queryTrimmed = args.query.trim();
       
-      if (!queryTrimmed.toUpperCase().startsWith('INSERT')) {
-        // Throw specific error for invalid query type
-        throw new Error("Invalid query type: Only INSERT statements are allowed by this tool.");
+      if (!queryTrimmed.toUpperCase().startsWith('UPDATE')) {
+        throw new Error("Invalid query type: Only UPDATE statements are allowed by this tool.");
       }
 
-      logger.info(`Executing INSERT query: ${queryTrimmed}`);
-      // Execute the INSERT query directly using exec
+      // Initialize DuckDB connection
+      duckDBConn = await setupDuckDB();
+      logger.info(`DuckDB connection obtained. Ready for UPDATE on reader_tracker.`);
+
+      logger.info(`Executing UPDATE query: ${queryTrimmed}`);
+      // Execute the UPDATE query directly using exec
       await new Promise<void>((resolve, reject) => {
         duckDBConn!.exec(queryTrimmed, (err) => { // Use trimmed query
           if (err) {
-            logger.error(`PostgreSQL INSERT execution error: ${err}`);
+            logger.error(`PostgreSQL UPDATE execution error: ${err}`);
             // Reject with a more specific error message
-            reject(new Error(`Error executing INSERT: ${err.message}`));
+            reject(new Error(`Error executing UPDATE: ${err.message}`));
           } else {
             logger.info(`PostgreSQL DML/DDL query executed successfully`);
             resolve();
@@ -68,4 +71,4 @@ export class DuckDBInsertTool extends MCPTool {
   }
 }
 
-export default DuckDBInsertTool;
+export default DuckDBUpdateTool;

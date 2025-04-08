@@ -2,7 +2,7 @@ import { MCPTool, logger } from "mcp-framework";
 import { z } from "zod";
 import { Storage, GetFilesOptions } from '@google-cloud/storage';
 import { setupGCS } from '../services/gcs.js';
-import { formatSuccessResponse } from "../utils.js";
+import { formatErrorResponse, formatSuccessResponse } from "../utils.js";
 
 // Remove separate Zod schema definition and type inference
 
@@ -96,7 +96,7 @@ export class GCSDirectoryTreeTool extends MCPTool {
       return formatSuccessResponse(result);
     } catch (error) {
       logger.error(`Error executing ${this.name}: ${error}`);
-      throw new Error(`GCS Directory Tree Tool Error: ${error instanceof Error ? error.message : String(error)}`);
+      return formatErrorResponse(error);
     }
   }
 }
