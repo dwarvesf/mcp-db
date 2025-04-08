@@ -37,7 +37,7 @@ export class DuckDBInsertTool extends MCPTool {
 
       // Validate that the query is an INSERT statement
       const queryTrimmed = args.query.trim();
-      
+
       if (!queryTrimmed.toUpperCase().startsWith('INSERT')) {
         // Throw specific error for invalid query type
         throw new Error("Invalid query type: Only INSERT statements are allowed by this tool.");
@@ -50,7 +50,7 @@ export class DuckDBInsertTool extends MCPTool {
           if (err) {
             logger.error(`PostgreSQL INSERT execution error: ${err}`);
             // Reject with a more specific error message
-            reject(new Error(`Error executing INSERT: ${err.message}`));
+            reject(new Error(`Error executing INSERT: ${err.message}. Query: ${queryTrimmed}`));
           } else {
             logger.info(`PostgreSQL DML/DDL query executed successfully`);
             resolve();
