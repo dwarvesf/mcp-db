@@ -36,31 +36,6 @@ export class DuckDBQueryTool extends MCPTool {
       duckDBConn = await setupDuckDB();
       logger.info(`DuckDB connection obtained. Assuming PostgreSQL connection is ready.`);
 
-      // // Prepare the query, handling potential trailing semicolon and adding LIMIT
-      // let baseQuery = args.query.trim();
-      // const endsWithSemicolon = baseQuery.endsWith(';');
-      // if (endsWithSemicolon) {
-      //   baseQuery = baseQuery.slice(0, -1).trim(); // Remove trailing semicolon
-      // }
-
-      // let finalQuery: string;
-      // const isSelectQuery = baseQuery.toUpperCase().startsWith('SELECT');
-      // const hasLimit = baseQuery.toUpperCase().includes('LIMIT');
-
-      // // Add LIMIT only to SELECT queries that don't already have one
-      // if (isSelectQuery && !hasLimit) {
-      //   finalQuery = `${baseQuery} LIMIT 1000`;
-      //   logger.info("Automatically added LIMIT 1000 to SELECT query.");
-      // } else {
-      //   finalQuery = baseQuery; // Use the original query (minus trailing semicolon)
-      //   if (!isSelectQuery) {
-      //     logger.info("Query is not a SELECT statement, LIMIT not added.");
-      //   } else if (hasLimit) {
-      //     logger.info("Query already contains LIMIT, not adding automatically.");
-      //   }
-      // }
-      // Note: We are intentionally not adding the semicolon back. DuckDB usually handles this fine.
-
       // Prefix unqualified table names (simple approach)
       const pgPrefix = `${POSTGRES_DB_ALIAS}.public.`; // Use the imported alias
       // Regex to find FROM/JOIN followed by an unqualified table name
