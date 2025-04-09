@@ -57,7 +57,7 @@ export class DuckDBQueryTool extends MCPTool {
         duckDBConn!.all(modifiedQuery, (err, result) => { // Use modifiedQuery
           if (err) {
             logger.error(`PostgreSQL query execution error: ${err}`);
-            reject(err);
+            reject(`{"status":"failed", "error": "${err.message}"}`);
           } else {
             logger.info(`PostgreSQL query executed successfully`);
             resolve(result);
@@ -71,7 +71,7 @@ export class DuckDBQueryTool extends MCPTool {
       logger.error(`Error executing ${this.name}: ${error}`);
       // Provide a generic error message as specific alias errors are less likely now
       // throw new Error(`Postgres Query Tool Error: ${error instanceof Error ? error.message : String(error)}`);
-      return formatErrorResponse(error);
+      return {status:"failed", message: error instanceof Error ? error.message : String(error), query: args.query};
     }
     // No finally block for DETACH needed as per user feedback
   }

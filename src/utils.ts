@@ -35,7 +35,7 @@ export function formatErrorResponse(error: unknown): { content: any[], isError: 
   return {
     content: [{
       type: "text",
-      text: `Error: ${error instanceof Error ? error.message : String(error)}`
+      text: `${error instanceof Error ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : String(error)}`
     }],
     isError: true
   };

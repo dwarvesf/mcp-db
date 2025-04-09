@@ -37,7 +37,7 @@ export class DuckDBUpdateTool extends MCPTool {
 
       // Validate that the query is an UPDATE statement
       const queryTrimmed = args.query.trim();
-      
+
       if (!queryTrimmed.toUpperCase().startsWith('UPDATE')) {
         throw new Error("Invalid query type: Only UPDATE statements are allowed by this tool.");
       }
@@ -53,7 +53,7 @@ export class DuckDBUpdateTool extends MCPTool {
           if (err) {
             logger.error(`PostgreSQL UPDATE execution error: ${err}`);
             // Reject with a more specific error message
-            reject(new Error(`Error executing UPDATE: ${err.message}`));
+            reject(err);
           } else {
             logger.info(`PostgreSQL DML/DDL query executed successfully`);
             resolve();
@@ -62,10 +62,10 @@ export class DuckDBUpdateTool extends MCPTool {
       });
 
       // Format the result according to the expected structure
-      return formatSuccessResponse("Query executed successfully.");
+      return { status: "success", message: "UPDATE executed successfully" };
     } catch (error) {
-      logger.error(`Error executing ${this.name}: ${error}`);
-      return formatErrorResponse(error);
+      logger.error(`Error executing ${this.name}`);
+      return { status: "failed", message: error instanceof Error ? error.message : String(error), query: args.query };
     }
     // No finally block needed
   }

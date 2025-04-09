@@ -50,7 +50,7 @@ export class DuckDBInsertTool extends MCPTool {
           if (err) {
             logger.error(`PostgreSQL INSERT execution error: ${err}`);
             // Reject with a more specific error message
-            reject(new Error(`Error executing INSERT: ${err.message}. Query: ${queryTrimmed}`));
+            reject(err);
           } else {
             logger.info(`PostgreSQL DML/DDL query executed successfully`);
             resolve();
@@ -59,10 +59,10 @@ export class DuckDBInsertTool extends MCPTool {
       });
 
       // Format the result according to the expected structure
-      return formatSuccessResponse("Query executed successfully.");
-    } catch (error) {
-      logger.error(`Error executing ${this.name}: ${error}`);
-      return formatErrorResponse(error);
+      return {status:"success", message: "INSERT executed successfully"};
+    } catch (error: any) {
+      console.log(`Error executing ${this.name}: ${error?.error || error}`);
+      return { status: "failed", message: error ? error.message : "Unknown error", query: args.query };
     }
     // No finally block needed
   }
