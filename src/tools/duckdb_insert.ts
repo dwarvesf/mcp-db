@@ -2,7 +2,7 @@ import { MCPTool, logger } from "mcp-framework";
 import { z } from "zod";
 import pkg from 'duckdb';
 const duckdb = pkg;
-import { setupDuckDB } from '../services/duckdb.js';
+import { setupDuckDB, executeQueryWithRetry } from '../services/duckdb.js';
 import { formatSuccessResponse, formatErrorResponse } from "../utils.js";
 
 // Remove separate Zod schema definition and type inference
@@ -28,43 +28,37 @@ export class DuckDBInsertTool extends MCPTool {
   // We can use Record<string, any> or a more specific type if known, but validation happens before this.
   async execute(args: { query: string }): Promise<any> {
     logger.info(`Handling tool request: ${this.name}`);
-    let duckDBConn: DuckDBConnection | null = null;
 
     try {
-      // Initialize DuckDB connection (assuming it handles all postgres setup)
-      duckDBConn = await setupDuckDB();
-      logger.info(`DuckDB connection obtained. Ready for INSERT.`);
-
       // Validate that the query is an INSERT statement
       const queryTrimmed = args.query.trim();
 
       if (!queryTrimmed.toUpperCase().startsWith('INSERT')) {
-        // Throw specific error for invalid query type
         throw new Error("Invalid query type: Only INSERT statements are allowed by this tool.");
       }
 
       logger.info(`Executing INSERT query: ${queryTrimmed}`);
-      // Execute the INSERT query directly using exec
-      await new Promise<void>((resolve, reject) => {
-        duckDBConn!.exec(queryTrimmed, (err) => { // Use trimmed query
-          if (err) {
-            logger.error(`PostgreSQL INSERT execution error: ${err}`);
-            // Reject with a more specific error message
-            reject(err);
-          } else {
-            logger.info(`PostgreSQL DML/DDL query executed successfully`);
-            resolve();
-          }
+
+      // Use the new executeQueryWithRetry function
+      await executeQueryWithRetry(queryTrimmed, async (conn) => {
+        return new Promise<void>((resolve, reject) => {
+          conn.exec(queryTrimmed, (err) => {
+            if (err) {
+              logger.error(`PostgreSQL INSERT execution error: ${err}`);
+              reject(err);
+            } else {
+              logger.info(`PostgreSQL DML/DDL query executed successfully`);
+              resolve();
+            }
+          });
         });
       });
 
-      // Format the result according to the expected structure
       return {status:"success", message: "INSERT executed successfully"};
     } catch (error: any) {
       console.log(`Error executing ${this.name}: ${error?.error || error}`);
       return { status: "failed", message: error ? error.message : "Unknown error", query: args.query };
     }
-    // No finally block needed
   }
 }
 

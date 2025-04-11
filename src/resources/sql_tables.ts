@@ -1,6 +1,6 @@
 import { MCPResource } from "mcp-framework";
 import { serializeBigInt } from '../utils.js'; // Adjust path as needed
-import { setupDuckDB, getDuckDBConnection, POSTGRES_DB_ALIAS } from "../services/duckdb.js"; // Import DuckDB setup
+import { setupDuckDB, POSTGRES_DB_ALIAS } from "../services/duckdb.js"; // Import DuckDB setup
 import type { Connection as DuckDBConnection } from 'duckdb'; // Import DuckDB types
 
 export class SQLTablesResource extends MCPResource { // Changed to export default

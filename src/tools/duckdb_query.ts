@@ -3,7 +3,7 @@ import { z } from "zod";
 import pkg from 'duckdb';
 const duckdb = pkg;
 import { formatSuccessResponse, formatErrorResponse } from '../utils.js';
-import { setupDuckDB, POSTGRES_DB_ALIAS } from '../services/duckdb.js'; // Import the alias
+import { setupDuckDB, POSTGRES_DB_ALIAS, executeQueryWithRetry } from '../services/duckdb.js';
 
 // Remove separate Zod schema definition and type inference
 
@@ -29,19 +29,10 @@ export class DuckDBQueryTool extends MCPTool {
   // The 'args' type will be validated by the base MCPTool class against the 'schema' property.
   async execute(args: { query: string }): Promise<any> {
     logger.info(`Handling tool request: ${this.name}`);
-    let duckDBConn: DuckDBConnection | null = null;
 
     try {
-      // Initialize DuckDB connection (assuming it handles all postgres setup)
-      duckDBConn = await setupDuckDB();
-      logger.info(`DuckDB connection obtained. Assuming PostgreSQL connection is ready.`);
-
-      // Prefix unqualified table names (simple approach)
-      const pgPrefix = `${POSTGRES_DB_ALIAS}.public.`; // Use the imported alias
-      // Regex to find FROM/JOIN followed by an unqualified table name
-      // Looks for FROM/JOIN, whitespace, then an identifier (letters, numbers, _)
-      // that is NOT followed by a dot (.), indicating it's unqualified.
-      // Using \b for word boundaries to avoid partial matches.
+      // Prefix unqualified table names
+      const pgPrefix = `${POSTGRES_DB_ALIAS}.public.`;
       const modifiedQuery = args.query.replace(
         /\b(FROM|JOIN)\s+([a-zA-Z_][a-zA-Z0-9_]*)\b(?!\.)/gi,
         (match, keyword, tableName) => {
@@ -51,29 +42,27 @@ export class DuckDBQueryTool extends MCPTool {
       );
 
       logger.info(`Executing modified query: ${modifiedQuery}`);
-      // Execute the modified query directly
-      const result = await new Promise((resolve, reject) => {
-        // No need to specify alias if DuckDB handles it implicitly
-        duckDBConn!.all(modifiedQuery, (err, result) => { // Use modifiedQuery
-          if (err) {
-            logger.error(`PostgreSQL query execution error: ${err}`);
-            reject(`{"status":"failed", "error": "${err.message}"}`);
-          } else {
-            logger.info(`PostgreSQL query executed successfully`);
-            resolve(result);
-          }
+
+      // Use the new executeQueryWithRetry function
+      const result = await executeQueryWithRetry(modifiedQuery, async (conn) => {
+        return new Promise((resolve, reject) => {
+          conn.all(modifiedQuery, (err, result) => {
+            if (err) {
+              logger.error(`PostgreSQL query execution error: ${err}`);
+              reject(err);
+            } else {
+              logger.info(`PostgreSQL query executed successfully`);
+              resolve(result);
+            }
+          });
         });
       });
 
-      // Format the result according to the expected structure
       return formatSuccessResponse(result);
     } catch (error) {
       logger.error(`Error executing ${this.name}: ${error}`);
-      // Provide a generic error message as specific alias errors are less likely now
-      // throw new Error(`Postgres Query Tool Error: ${error instanceof Error ? error.message : String(error)}`);
-      return {status:"failed", message: error instanceof Error ? error.message : String(error), query: args.query};
+      return formatErrorResponse(error);
     }
-    // No finally block for DETACH needed as per user feedback
   }
 }
 

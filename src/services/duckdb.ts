@@ -6,18 +6,43 @@ const { parse } = pgConnectionString; // Destructure parse function
 type DuckDBDatabase = InstanceType<typeof duckdb.Database>;
 type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
 
+let dbInstance: DuckDBDatabase | null = null;
 let connectionInstance: DuckDBConnection | null = null;
+let isConnectionValid = true;
 
 // Define and export the alias used for the attached PostgreSQL database
 export const POSTGRES_DB_ALIAS = 'postgres_db';
 
-export async function setupDuckDB(): Promise<DuckDBConnection> {
-  if (connectionInstance) {
-    return connectionInstance;
+// Helper function to check if an error is fatal and requires restart
+function isFatalError(error: Error): boolean {
+  return error.message.includes('database has been invalidated') || 
+         error.message.includes('Unsupported table filter type') ||
+         error.message.includes('INTERNAL Error');
+}
+
+// Function to completely clean up DuckDB resources
+async function cleanupDuckDB(): Promise<void> {
+  try {
+    if (connectionInstance) {
+      connectionInstance.close();
+      connectionInstance = null;
+    }
+    if (dbInstance) {
+      dbInstance.close();
+      dbInstance = null;
+    }
+  } catch (error) {
+    console.error("Error during DuckDB cleanup:", error);
   }
+}
+
+// Function to initialize a fresh DuckDB instance
+async function initializeDuckDB(): Promise<DuckDBConnection> {
+  // First ensure we clean up any existing instances
+  await cleanupDuckDB();
 
   // Initialize database
-  const db = await new Promise<DuckDBDatabase>((resolve, reject) => {
+  dbInstance = await new Promise<DuckDBDatabase>((resolve, reject) => {
     const database = new duckdb.Database(':memory:', (err: Error | null) => {
       if (err) {
         console.error("Failed to initialize DuckDB:", err);
@@ -29,8 +54,8 @@ export async function setupDuckDB(): Promise<DuckDBConnection> {
   });
 
   // Create connection
-  const conn = await new Promise<DuckDBConnection>((resolve, reject) => {
-    const connection = new duckdb.Connection(db, (err: Error | null) => {
+  connectionInstance = await new Promise<DuckDBConnection>((resolve, reject) => {
+    const connection = new duckdb.Connection(dbInstance!, (err: Error | null) => {
       if (err) {
         console.error("Failed to create DuckDB connection:", err);
         reject(err);
@@ -42,12 +67,15 @@ export async function setupDuckDB(): Promise<DuckDBConnection> {
   
   // Enable required extensions
   await new Promise<void>((resolve, reject) => {
-    conn.exec(`INSTALL httpfs;
-                LOAD httpfs;
-                INSTALL postgres;
-                LOAD postgres;`, (err: Error | null) => { // Add postgres install/load
+    connectionInstance!.exec(`
+      INSTALL httpfs;
+      LOAD httpfs;
+      INSTALL postgres;
+      LOAD postgres;
+      SET pg_experimental_filter_pushdown=true;
+    `, (err: Error | null) => {
       if (err) {
-        console.error("Failed to enable DuckDB httpfs/postgres extensions:", err);
+        console.error("Failed to enable DuckDB extensions and configure settings:", err);
         reject(err);
       } else {
         resolve();
@@ -62,7 +90,7 @@ export async function setupDuckDB(): Promise<DuckDBConnection> {
   if (gcsKeyId && gcsSecret) {
     try {
       await new Promise<void>((resolve, reject) => {
-        conn.exec(`CREATE SECRET (
+        connectionInstance!.exec(`CREATE SECRET (
           TYPE gcs,
           KEY_ID '${gcsKeyId}',
           SECRET '${gcsSecret}'
@@ -88,19 +116,18 @@ export async function setupDuckDB(): Promise<DuckDBConnection> {
   if (databaseUrl) {
     console.error("DATABASE_URL found, configuring PostgreSQL secret in DuckDB...");
     try {
-      const pgConfig = parse(databaseUrl); // Use pg-connection-string parser
+      const pgConfig = parse(databaseUrl);
 
-      const host = pgConfig.host || 'localhost'; // Default if missing
-      const port = pgConfig.port || '5432'; // Default PG port
+      const host = pgConfig.host || 'localhost';
+      const port = pgConfig.port || '5432';
       const database = pgConfig.database;
       const user = pgConfig.user;
       const password = pgConfig.password;
 
-      if (!database || !user) { // Host might be implicit (e.g., Unix socket) but db/user are essential
+      if (!database || !user) {
         throw new Error("DATABASE_URL is missing required components (database, user).");
       }
 
-      // Escape single quotes in password if necessary
       const escapedPassword = password ? password.replace(/'/g, "''") : '';
 
       const createSecretQuery = `
@@ -114,9 +141,8 @@ export async function setupDuckDB(): Promise<DuckDBConnection> {
         );`;
 
       await new Promise<void>((resolve, reject) => {
-        conn.exec(createSecretQuery, (err: Error | null) => {
+        connectionInstance!.exec(createSecretQuery, (err: Error | null) => {
           if (err) {
-            // Check if secret already exists
             if (err.message.includes("already exists")) {
                console.warn("PostgreSQL secret 'pg_secret' already exists, skipping creation.");
                resolve();
@@ -131,12 +157,16 @@ export async function setupDuckDB(): Promise<DuckDBConnection> {
         });
       });
 
-      // Attach the database using the secret and the exported alias
-      const attachQuery = `ATTACH '' AS ${POSTGRES_DB_ALIAS} (TYPE postgres, SECRET pg_secret);`;
+      // Attach PostgreSQL database with specific settings
+      const attachQuery = `
+        ATTACH '' AS ${POSTGRES_DB_ALIAS} (
+          TYPE postgres,
+          SECRET pg_secret
+        );`;
+
       await new Promise<void>((resolve, reject) => {
-         conn.exec(attachQuery, (err: Error | null) => {
+         connectionInstance!.exec(attachQuery, (err: Error | null) => {
            if (err) {
-             // Check if already attached
              if (err.message.includes("already attached")) {
                 console.warn("PostgreSQL database 'postgres_db' already attached, skipping attach.");
                 resolve();
@@ -153,21 +183,44 @@ export async function setupDuckDB(): Promise<DuckDBConnection> {
 
     } catch (error) {
       console.error("Failed to parse DATABASE_URL or configure PostgreSQL connection in DuckDB:", error);
-      // Log the error and continue; tools relying on PG will fail later
     }
   } else {
     console.warn("DATABASE_URL not provided, skipping PostgreSQL secret configuration in DuckDB.");
   }
 
-
-  connectionInstance = conn; // Store the connection instance
-  return conn;
+  return connectionInstance;
 }
 
-// Function to retrieve the initialized connection
-export function getDuckDBConnection(): DuckDBConnection {
-  if (!connectionInstance) {
-    throw new Error("DuckDB connection has not been initialized. Call setupDuckDB first.");
+export async function setupDuckDB(): Promise<DuckDBConnection> {
+  if (connectionInstance) {
+    return connectionInstance;
   }
-  return connectionInstance;
+  return initializeDuckDB();
+}
+
+// Function to handle query execution with auto-restart
+export async function executeQueryWithRetry<T>(query: string, executor: (conn: DuckDBConnection) => Promise<T>): Promise<T> {
+  let retryCount = 0;
+  const maxRetries = 3;
+
+  while (retryCount < maxRetries) {
+    try {
+      const conn = await setupDuckDB();
+      return await executor(conn);
+    } catch (error) {
+      if (error instanceof Error && isFatalError(error)) {
+        retryCount++;
+        console.error(`Fatal DuckDB error detected (attempt ${retryCount}/${maxRetries}), attempting to reset connection...`);
+        await cleanupDuckDB();
+        if (retryCount === maxRetries) {
+          throw new Error(`Failed after ${maxRetries} retries: ${error.message}`);
+        }
+        // Add a small delay before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error("Maximum retry attempts reached");
 }
