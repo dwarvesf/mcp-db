@@ -180,8 +180,9 @@ This repository contains Mastra agents and workflows that read parquet files fro
 - **Tools in mcp-db:**
   - `gcs_directory_tree` - Lists GCS objects
   - `duckdb_read_parquet` - Queries parquet files
-  - `sql_query_read` - Executes SELECT queries
-  - `sql_query_create` - Executes CREATE/INSERT statements
+  - `duckdb_query` - Executes SELECT queries
+  - `duckdb_insert` - Executes INSERT statements
+  - `duckdb_update` - Executes UPDATE statements
 
 - **Mastra workflows in mcp-background-interface:**
   - `syncObservationWorkflow` - Orchestrates the ETL process

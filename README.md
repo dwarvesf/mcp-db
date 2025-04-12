@@ -62,26 +62,30 @@ A Model Context Protocol (MCP) server built with `mcp-framework` that provides t
 
 ## Installation
 
-1.  Clone the repository:
+1. Clone the repository:
+
     ```bash
     git clone <repository-url>
     cd mcp-db
     ```
 
-2.  Install dependencies (using Devbox is recommended for consistency):
+2. Install dependencies (using Devbox is recommended for consistency):
+
     ```bash
     devbox install
     # Or using npm directly if not using Devbox
     # npm install
     ```
 
-3.  Copy `.env.example` to `.env` and fill in your environment variables.
+3. Copy `.env.example` to `.env` and fill in your environment variables.
+
     ```bash
     cp .env.example .env
     # Edit .env with your details
     ```
 
-4.  Build the project:
+4. Build the project:
+
     ```bash
     # Using make (requires Devbox)
     make build
@@ -95,16 +99,16 @@ A Model Context Protocol (MCP) server built with `mcp-framework` that provides t
 
 Configure the server using these environment variables (or command-line arguments):
 
--   `DATABASE_URL`: PostgreSQL connection string (required unless running with supergateway).
--   `DATABASE_URLS`: Comma-separated list of `alias=url` pairs for multiple database connections (alternative to `DATABASE_URL`).
--   `LOG_LEVEL`: Logging level (`debug`, `info`, `error`). Default: `info`.
--   `GCS_BUCKET`: Default Google Cloud Storage bucket name (optional).
--   `GCP_SERVICE_ACCOUNT`: Base64 encoded Google Cloud service account key JSON (optional, for GCS authentication).
--   `GCS_KEY_ID` / `GCS_SECRET`: Alternative GCS credentials specifically for DuckDB's `httpfs` extension (optional).
--   `TRANSPORT`: Transport type (`stdio` or `sse`). Default: `stdio`.
--   `PORT`: Port number for SSE transport. Default: `3001`.
--   `HOST`: Hostname for SSE transport. Default: `localhost`.
--   `API_KEY`: Optional API key for securing the server (if set, clients must provide it in the `Authorization: Bearer <key>` header).
+- `DATABASE_URL`: PostgreSQL connection string (required unless running with supergateway).
+- `DATABASE_URLS`: Comma-separated list of `alias=url` pairs for multiple database connections (alternative to `DATABASE_URL`).
+- `LOG_LEVEL`: Logging level (`debug`, `info`, `error`). Default: `info`.
+- `GCS_BUCKET`: Default Google Cloud Storage bucket name (optional).
+- `GCP_SERVICE_ACCOUNT`: Base64 encoded Google Cloud service account key JSON (optional, for GCS authentication).
+- `GCS_KEY_ID` / `GCS_SECRET`: Alternative GCS credentials specifically for DuckDB's `httpfs` extension (optional).
+- `TRANSPORT`: Transport type (`stdio` or `sse`). Default: `stdio`.
+- `PORT`: Port number for SSE transport. Default: `3001`.
+- `HOST`: Hostname for SSE transport. Default: `localhost`.
+- `API_KEY`: Optional API key for securing the server (if set, clients must provide it in the `Authorization: Bearer <key>` header).
 
 Command-line arguments (e.g., `--port 8080`, `--gcs-bucket my-bucket`) override environment variables. See `src/config.ts` for details.
 
@@ -165,6 +169,7 @@ To connect your MCP client (e.g., `mcp-cli`, Claude Desktop) to the local server
   }
 }
 ```
+
 *(Note: The Docker/supergateway example from the previous README might be outdated or specific to a different deployment setup.)*
 
 **For Stdio Transport:**
@@ -199,28 +204,30 @@ npx github:dwarvesf/mcp-db --transport sse --port 3001
 
 ## Available Tools
 
--   `duckdb_insert`: Executes an `INSERT` statement on the attached PostgreSQL database via DuckDB. Only `INSERT` queries are allowed.
--   `duckdb_query`: Executes a read-only SQL query directly on the attached PostgreSQL database (`postgres_db`) using DuckDB's `postgres_query` function. Automatically prefixes unqualified table names (e.g., `my_table` becomes `postgres_db.public.my_table`).
--   `duckdb_read_parquet`: Queries Parquet files using DuckDB (likely from GCS if configured).
--   `gcs_directory_tree`: Fetches the directory tree structure from a GCS bucket with pagination support.
+- `duckdb_insert`: Executes an `INSERT` statement on the attached PostgreSQL database via DuckDB. Only `INSERT` queries are allowed.
+- `duckdb_query`: Executes a read-only SQL query directly on the attached PostgreSQL database (`postgres_db`) using DuckDB's `postgres_query` function. Automatically prefixes unqualified table names (e.g., `my_table` becomes `postgres_db.public.my_table`).
+- `duckdb_read_parquet`: Queries Parquet files using DuckDB (likely from GCS if configured).
+- `duckdb_update`: Executes an `UPDATE` statement on the attached PostgreSQL database via DuckDB.
+- `gcs_directory_tree`: Fetches the directory tree structure from a GCS bucket with pagination support.
 
 ## Available Resources
 
--   `mcp://gcs/objects` (`gcs_objects`): Lists objects in the configured GCS bucket.
--   `mcp://db/tables` (`sql_tables`): Lists all tables and their columns in the configured PostgreSQL database.
+- `mcp://gcs/objects`: Lists objects in the configured GCS bucket.
+- `mcp://db/tables`: Lists all tables and their columns in the configured PostgreSQL database.
 
 ## Development: Integrating a New Tool/Resource
 
 This project uses `mcp-framework`. To add a new tool or resource:
 
-1.  **Create the Class:**
-    -   Create a new `.ts` file in `src/tools/` or `src/resources/`.
-    -   Define a class that extends `MCPTool` or `MCPResource`.
-    -   Implement the required properties (`name`, `description`, `schema` for tools) and methods (`execute` for tools, `read` for resources).
-    -   Use Zod in the `schema` property for input validation (tools).
-    -   Initialize any dependencies (like DB connections or GCS clients) within the class, often in the constructor, potentially using services from `src/services/` or configuration from `src/config.ts`.
+1. **Create the Class:**
+    - Create a new `.ts` file in `src/tools/` or `src/resources/`.
+    - Define a class that extends `MCPTool` or `MCPResource`.
+    - Implement the required properties (`name`, `description`, `schema` for tools) and methods (`execute` for tools, `read` for resources).
+    - Use Zod in the `schema` property for input validation (tools).
+    - Initialize any dependencies (like DB connections or GCS clients) within the class, often in the constructor, potentially using services from `src/services/` or configuration from `src/config.ts`.
 
     *Example Tool (`src/tools/my_tool.ts`):*
+
     ```typescript
     import { MCPTool } from "mcp-framework";
     import { z } from "zod";
@@ -250,19 +257,19 @@ This project uses `mcp-framework`. To add a new tool or resource:
     export default MyTool; // Ensure default export
     ```
 
-2.  **Automatic Discovery:**
-    -   `mcp-framework` automatically discovers and registers tool/resource classes that are default-exported from files within the `src/tools` and `src/resources` directories.
-    -   Ensure your new class is the `default export` in its file.
+2. **Automatic Discovery:**
+    - `mcp-framework` automatically discovers and registers tool/resource classes that are default-exported from files within the `src/tools` and `src/resources` directories.
+    - Ensure your new class is the `default export` in its file.
 
-3.  **Test:**
-    -   Run the server (`make dev`).
-    -   Check the startup logs to ensure your new tool/resource is listed.
-    -   Use an MCP client (like `mcp-cli` or the MCP Inspector) to call the tool or read the resource and verify its functionality.
+3. **Test:**
+    - Run the server (`make dev`).
+    - Check the startup logs to ensure your new tool/resource is listed.
+    - Use an MCP client (like `mcp-cli` or the MCP Inspector) to call the tool or read the resource and verify its functionality.
 
 ### Best Practices
 
--   Define clear input schemas using Zod for tools.
--   Handle errors gracefully within `execute`/`read` and return formatted error responses using `formatErrorResponse` (or throw errors).
--   Use the centralized configuration (`src/config.ts`) via `getConfig()` where needed.
--   Leverage the service initializers in `src/services/` for dependencies like database connections.
--   Add logging (`console.error`) for visibility.
+- Define clear input schemas using Zod for tools.
+- Handle errors gracefully within `execute`/`read` and return formatted error responses using `formatErrorResponse` (or throw errors).
+- Use the centralized configuration (`src/config.ts`) via `getConfig()` where needed.
+- Leverage the service initializers in `src/services/` for dependencies like database connections.
+- Add logging (`console.error`) for visibility.
