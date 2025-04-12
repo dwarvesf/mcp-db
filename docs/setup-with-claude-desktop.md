@@ -17,7 +17,7 @@ There are two ways for Claude Desktop to connect to the mcp server:
 1. Start the mcp server:
 
    ```bash
-   make dev-fast ## this will start the mcp server on port 3001
+   make dev ## this will start the mcp server on port 3001
    ```
 
 2. Start ngrok:
