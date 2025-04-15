@@ -8,6 +8,7 @@ const { parse: parseConnectionString } = pgConnectionString; // Destructure pars
 config();
 
 const ConfigSchema = z.object({
+  env: z.enum(['development', 'production']).default('production'),
   // Map of alias -> connection string URL
   databaseConnections: z.record(z.string().url()).optional(),
   // Single URL for backward compatibility
@@ -17,8 +18,8 @@ const ConfigSchema = z.object({
   transport: z.enum(['stdio', 'sse']).default('stdio'),
   port: z.number().min(1).max(65535).default(3001),
   host: z.string().default('localhost'),
-  // Add apiKey
-  apiKey: z.string().optional()
+  // Add jwtKey
+  jwtKey: z.string().optional()
 });
 
 export type AppConfig = z.infer<typeof ConfigSchema>;
@@ -72,6 +73,8 @@ function parseDatabaseUrls(inputs: string[]): Record<string, string> | null {
 
 
 export function validateConfig(args: any): AppConfig {
+  let env = process.env.NODE_ENV || 'production';
+
   // --- Database Configuration ---
   let databaseConnections: Record<string, string> | undefined;
   let databaseUrl: string | undefined;
@@ -103,7 +106,7 @@ export function validateConfig(args: any): AppConfig {
   const port = args['--port'] ? parseInt(String(args['--port']), 10) : parseInt(process.env.PORT || '3001', 10);
   const host = args['--host'] || process.env.HOST || 'localhost';
   // Read API Key from environment
-  const apiKey = process.env.API_KEY;
+  const jwtKey = process.env.JWT_KEY;
 
   // Check if we're running in supergateway (it sets specific environment variables)
   const isInSupergateway = process.env.SUPERGATEWAY_PORT || process.env.SUPERGATEWAY_SSE_PATH;
@@ -126,6 +129,7 @@ export function validateConfig(args: any): AppConfig {
   try {
     // Prepare object for Zod validation
     const configToValidate = {
+      env,
       databaseConnections,
       databaseUrl,
       logLevel: logLevel || 'info',
@@ -133,7 +137,7 @@ export function validateConfig(args: any): AppConfig {
       transport,
       port,
       host,
-      apiKey // Include apiKey in the object to be validated
+      jwtKey // Include apiKey in the object to be validated
     };
 
     const parsedConfig = ConfigSchema.parse(configToValidate);

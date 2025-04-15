@@ -13,6 +13,7 @@ import { setupPostgres } from './services/postgres.js';
 import { setupDuckDB } from './services/duckdb.js';
 import { setupGCS } from './services/gcs.js';
 import { validateConfig } from './config.js';
+import CustomAuthProvider from "./auth/provider.js";
 
 type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
 
@@ -117,7 +118,7 @@ export async function main(): Promise<void> {
     const host = args['--host'] || '0.0.0.0';
 
     if (args['--transport'] === 'sse') {
-      logger.info(`\nConfiguring server for SSE (http-stream) transport on ${host}:${port}...`);
+      logger.info(`\nConfiguring server for SSE transport on ${host}:${port}...`);
       // Map 'sse' arg to 'http-stream' type and configure options
 
       transportConfig = {
@@ -135,6 +136,16 @@ export async function main(): Promise<void> {
           }
         }
       };
+
+      if (config.env === 'production') {
+        transportConfig.options.auth = {
+          provider: new CustomAuthProvider(),
+          endpoints: {
+            sse: true,      // Protect SSE endpoint (default: false)
+            messages: true  // Protect message endpoint (default: true)
+          }
+        }
+      }
     }
 
     if (args['--transport'] === 'stdio') {
