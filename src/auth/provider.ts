@@ -13,8 +13,6 @@ class CustomAuthProvider implements AuthProvider {
         // Basic authentication check - you can extend this with your custom logic
         if (authHeader.startsWith('Bearer ')) {
             const token = authHeader.substring(7);
-            console.log("token", token);
-            console.log("jwtKey", getConfig().jwtKey);
             if (token === getConfig().jwtKey) {
                 return {
                     data: {
