@@ -18,8 +18,10 @@ const ConfigSchema = z.object({
   transport: z.enum(['stdio', 'sse']).default('stdio'),
   port: z.number().min(1).max(65535).default(3001),
   host: z.string().default('localhost'),
-  // Add jwtKey
-  jwtKey: z.string().optional()
+  // Add APIKey
+  apiKey: z.string().optional(),
+  // Add jwtSecret
+  jwtSecret: z.string().optional()
 });
 
 export type AppConfig = z.infer<typeof ConfigSchema>;
@@ -105,8 +107,8 @@ export function validateConfig(args: any): AppConfig {
   const transport = args['--transport'] || process.env.TRANSPORT || 'stdio';
   const port = args['--port'] ? parseInt(String(args['--port']), 10) : parseInt(process.env.PORT || '3001', 10);
   const host = args['--host'] || process.env.HOST || 'localhost';
-  // Read API Key from environment
-  const jwtKey = process.env.JWT_KEY;
+  const jwtSecret = process.env.JWT_SECRET;
+  const apiKey = process.env.API_KEY;
 
   // Check if we're running in supergateway (it sets specific environment variables)
   const isInSupergateway = process.env.SUPERGATEWAY_PORT || process.env.SUPERGATEWAY_SSE_PATH;
@@ -137,7 +139,8 @@ export function validateConfig(args: any): AppConfig {
       transport,
       port,
       host,
-      jwtKey // Include apiKey in the object to be validated
+      jwtSecret,
+      apiKey
     };
 
     const parsedConfig = ConfigSchema.parse(configToValidate);

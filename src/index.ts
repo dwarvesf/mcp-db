@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { MCPServer, logger } from "mcp-framework"; // Use the correct import based on user feedback
+import { JWTAuthProvider, MCPServer, logger } from "mcp-framework"; // Use the correct import based on user feedback
 // Assuming McpError and ErrorCode might not be exported or needed in the same way.
 // If errors occur, we might need to adjust handler error throwing.
 // import { McpError, ErrorCode } from "mcp-framework";
@@ -12,8 +12,9 @@ import { Storage } from '@google-cloud/storage';
 import { setupPostgres } from './services/postgres.js';
 import { setupDuckDB } from './services/duckdb.js';
 import { setupGCS } from './services/gcs.js';
-import { validateConfig } from './config.js';
+import { getConfig, validateConfig } from './config.js';
 import CustomAuthProvider from "./auth/provider.js";
+import { APIKeyAuthProvider } from "mcp-framework";
 
 type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
 
@@ -138,10 +139,15 @@ export async function main(): Promise<void> {
       };
 
       if (config.env === 'production') {
+        logger.info("Production environment detected, setting up authentication...");
         transportConfig.options.auth = {
-          provider: new CustomAuthProvider(),
+          // provider: new CustomAuthProvider(),
+          provider: new APIKeyAuthProvider({
+            keys: [config.apiKey || ""],
+            headerName: "X-API-Key" // Optional (default: "X-API-Key")
+          }),
           endpoints: {
-            sse: true,      // Protect SSE endpoint (default: false)
+            sse: false,      // Protect SSE endpoint (default: false)
             messages: true  // Protect message endpoint (default: true)
           }
         }
