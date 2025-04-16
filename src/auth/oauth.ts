@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction, RequestHandler } from 'expres
 import { Pool } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import { getPostgresPool } from '../services/postgres.js';
 
 // Types
 interface AuthorizationRequest {
@@ -56,11 +57,16 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Database configuration
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+// Get the global PostgreSQL connection pool
+let pool: Pool;
+(async () => {
+  try {
+    pool = await getPostgresPool();
+  } catch (error) {
+    console.error('Failed to get PostgreSQL connection pool:', error);
+    process.exit(1);
+  }
+})();
 
 // Helper functions for database operations
 async function createAuthorizationRequest(
@@ -335,4 +341,4 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`MCP OAuth Server running on port ${PORT}`);
-}); 
+});
