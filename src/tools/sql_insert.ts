@@ -1,8 +1,7 @@
 import { MCPTool, logger } from "mcp-framework";
 import { z } from "zod";
 import { Pool } from 'pg';
-import { setupPostgres } from '../services/postgres.js';
-import { getConfig } from '../config.js';
+import { getPostgresPool } from '../services/postgres.js';
 import { formatSuccessResponse, formatErrorResponse } from "../utils.js";
 
 // Use default generic type for MCPTool or a simpler one if needed.
@@ -20,26 +19,11 @@ export class SQLInsertTool extends MCPTool {
     },
   };
 
-  // Initialize PostgreSQL connection pool
+  // Get the PostgreSQL connection pool
   private async getPool(): Promise<Pool> {
-    if (this.pool) {
-      return this.pool;
+    if (!this.pool) {
+      this.pool = await getPostgresPool();
     }
-
-    // Get database connection from config
-    const config = getConfig();
-    let databaseUrl = config?.databaseUrl;
-    
-    // If not available, fall back to environment variable
-    if (!databaseUrl) {
-      databaseUrl = process.env.DATABASE_URL;
-    }
-
-    if (!databaseUrl) {
-      throw new Error("No database URL configured. Please set DATABASE_URL environment variable or configure it in the app config.");
-    }
-
-    this.pool = await setupPostgres(databaseUrl);
     return this.pool;
   }
 

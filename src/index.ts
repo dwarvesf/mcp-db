@@ -9,7 +9,7 @@ import pkg from 'duckdb';
 const duckdb = pkg;
 import { Storage } from '@google-cloud/storage';
 
-import { setupPostgres } from './services/postgres.js';
+import { setupPostgres, cleanupPostgres } from './services/postgres.js';
 import { setupDuckDB } from './services/duckdb.js';
 import { setupGCS } from './services/gcs.js';
 import { getConfig, validateConfig } from './config.js';
@@ -74,7 +74,6 @@ if (args['--help']) {
 
 // --- Main Server Logic ---
 export async function main(): Promise<void> {
-  let pgPool: Pool | null = null;
   let duckDBConn: DuckDBConnection | null = null;
   let gcs: Storage | null = null;
   let server: MCPServer | null = null; // Define server variable
@@ -90,7 +89,7 @@ export async function main(): Promise<void> {
     // Setup PostgreSQL
     if (config.databaseUrl) {
       logger.info("\nSetting up PostgreSQL connection...");
-      pgPool = await setupPostgres(config.databaseUrl);
+      await setupPostgres(config.databaseUrl);
       logger.info("PostgreSQL connection established successfully");
     }
 
@@ -187,10 +186,9 @@ export async function main(): Promise<void> {
       } else {
         logger.info("MCP Server instance not found or stop method unavailable.");
       }
-      if (pgPool) {
-        await pgPool.end();
-        logger.info("PostgreSQL connection closed");
-      }
+      // Clean up PostgreSQL resources
+      await cleanupPostgres();
+      logger.info("PostgreSQL connection closed");
       // Add DuckDB cleanup if needed
       // if (duckDBConn) { ... }
       logger.info("Cleanup complete");
@@ -216,7 +214,7 @@ export async function main(): Promise<void> {
       logger.error(`Unknown error: ${error}`);
     }
     // Ensure cleanup runs even on startup error
-    if (pgPool) await pgPool.end().catch(e => logger.error(`Error closing PG pool on startup failure:  ${e}`));
+    await cleanupPostgres().catch(e => logger.error(`Error closing PG pool on startup failure:  ${e}`));
     // Attempt server stop if it was initialized
     if (server && typeof server.stop === 'function') await server.stop().catch(e => logger.error(`Error stopping server on startup failure: ${e}`));
     process.exit(1);
