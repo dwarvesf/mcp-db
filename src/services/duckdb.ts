@@ -2,6 +2,7 @@ import pkg from 'duckdb';
 const duckdb = pkg;
 import pgConnectionString from 'pg-connection-string'; // Import default
 const { parse } = pgConnectionString; // Destructure parse function
+import { getConfig } from '../config.js'; // Import getConfig for database connections with .js extension
 
 type DuckDBDatabase = InstanceType<typeof duckdb.Database>;
 type DuckDBConnection = InstanceType<typeof duckdb.Connection>;
@@ -111,10 +112,26 @@ async function initializeDuckDB(): Promise<DuckDBConnection> {
     console.error("No GCS credentials provided (GCS_KEY_ID and GCS_SECRET), GCS access may be limited");
   }
 
-  // Configure PostgreSQL connection via secret if DATABASE_URL is provided
-  const databaseUrl = process.env.DATABASE_URL;
+  // Get database connections from config
+  let config;
+  try {
+    config = getConfig();
+  } catch (error) {
+    console.warn("Failed to get validated config, will try environment variables as fallback:", error);
+    config = null;
+  }
+
+  // First try databaseUrl from config
+  let databaseUrl = config?.databaseUrl;
+  
+  // If not available, fall back to environment variable
+  if (!databaseUrl) {
+    databaseUrl = process.env.DATABASE_URL;
+  }
+
+  // Configure primary PostgreSQL connection
   if (databaseUrl) {
-    console.error("DATABASE_URL found, configuring PostgreSQL secret in DuckDB...");
+    console.error("Primary database URL found, configuring PostgreSQL secret in DuckDB...");
     try {
       const pgConfig = parse(databaseUrl);
 
@@ -125,7 +142,7 @@ async function initializeDuckDB(): Promise<DuckDBConnection> {
       const password = pgConfig.password;
 
       if (!database || !user) {
-        throw new Error("DATABASE_URL is missing required components (database, user).");
+        throw new Error("Database URL is missing required components (database, user).");
       }
 
       const escapedPassword = password ? password.replace(/'/g, "''") : '';
@@ -182,10 +199,102 @@ async function initializeDuckDB(): Promise<DuckDBConnection> {
        });
 
     } catch (error) {
-      console.error("Failed to parse DATABASE_URL or configure PostgreSQL connection in DuckDB:", error);
+      console.error("Failed to parse database URL or configure primary PostgreSQL connection in DuckDB:", error);
     }
   } else {
-    console.warn("DATABASE_URL not provided, skipping PostgreSQL secret configuration in DuckDB.");
+    console.warn("Primary database URL not provided, skipping primary PostgreSQL configuration in DuckDB.");
+  }
+
+  // Attach additional database connections if available
+  if (config?.databaseConnections) {
+    console.error(`Found ${Object.keys(config.databaseConnections).length} additional database connections, attaching to DuckDB...`);
+    
+    for (const [alias, url] of Object.entries(config.databaseConnections)) {
+      // Skip if this is the same as the primary connection
+      if (url === databaseUrl) {
+        console.warn(`Skipping database connection '${alias}' as it matches the primary connection.`);
+        continue;
+      }
+
+      // Ensure url is a string
+      if (typeof url !== 'string') {
+        console.error(`Database URL for alias '${alias}' is not a string, skipping.`);
+        continue;
+      }
+
+      try {
+        const pgConfig = parse(url);
+
+        const host = pgConfig.host || 'localhost';
+        const port = pgConfig.port || '5432';
+        const database = pgConfig.database;
+        const user = pgConfig.user;
+        const password = pgConfig.password;
+
+        if (!database || !user) {
+          console.error(`Database URL for alias '${alias}' is missing required components (database, user), skipping.`);
+          continue;
+        }
+
+        const escapedPassword = password ? password.replace(/'/g, "''") : '';
+        const secretName = `pg_secret_${alias}`;
+
+        // Create secret for this connection
+        const createSecretQuery = `
+          CREATE SECRET ${secretName} (
+              TYPE postgres,
+              HOST '${host}',
+              PORT ${port},
+              DATABASE '${database}',
+              USER '${user}',
+              PASSWORD '${escapedPassword}'
+          );`;
+
+        await new Promise<void>((resolve, reject) => {
+          connectionInstance!.exec(createSecretQuery, (err: Error | null) => {
+            if (err) {
+              if (err.message.includes("already exists")) {
+                console.warn(`PostgreSQL secret '${secretName}' already exists, skipping creation.`);
+                resolve();
+              } else {
+                console.error(`Failed to create PostgreSQL secret '${secretName}' in DuckDB:`, err);
+                reject(err);
+              }
+            } else {
+              console.error(`Successfully created PostgreSQL secret '${secretName}' in DuckDB`);
+              resolve();
+            }
+          });
+        });
+
+        // Attach PostgreSQL database with the original alias
+        const attachQuery = `
+          ATTACH '' AS ${alias} (
+            TYPE postgres,
+            SECRET ${secretName}
+          );`;
+
+        await new Promise<void>((resolve, reject) => {
+          connectionInstance!.exec(attachQuery, (err: Error | null) => {
+            if (err) {
+              if (err.message.includes("already attached")) {
+                console.warn(`PostgreSQL database '${alias}' already attached, skipping attach.`);
+                resolve();
+              } else {
+                console.error(`Failed to attach PostgreSQL database '${alias}':`, err);
+                reject(err);
+              }
+            } else {
+              console.error(`Successfully attached PostgreSQL database as '${alias}'`);
+              resolve();
+            }
+          });
+        });
+
+      } catch (error) {
+        console.error(`Failed to parse database URL or configure PostgreSQL connection '${alias}' in DuckDB:`, error);
+      }
+    }
   }
 
   return connectionInstance;
