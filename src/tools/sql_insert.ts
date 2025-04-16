@@ -57,4 +57,4 @@ export class SQLInsertTool extends MCPTool {
   }
 }
 
-export default SQLInsertTool;
+// export default SQLInsertTool;

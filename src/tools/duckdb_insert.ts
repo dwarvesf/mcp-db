@@ -2,8 +2,7 @@ import { MCPTool, logger } from "mcp-framework";
 import { z } from "zod";
 import pkg from 'duckdb';
 const duckdb = pkg;
-import { setupDuckDB, executeQueryWithRetry } from '../services/duckdb.js';
-import { formatSuccessResponse, formatErrorResponse } from "../utils.js";
+import { executeQueryWithRetry } from '../services/duckdb.js';
 
 // Remove separate Zod schema definition and type inference
 
