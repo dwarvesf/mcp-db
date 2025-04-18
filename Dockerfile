@@ -23,14 +23,15 @@ RUN groupadd -r appgroup && \
 COPY package*.json tsconfig.json ./
 ENV NODE_ENV=production
 
-# Install production dependencies and rebuild native modules
-RUN npm ci --omit=dev --ignore-scripts && \
+# Install dependencies (including node-pg-migrate needed for migrations)
+RUN npm ci --ignore-scripts && \
     npm rebuild && \
     chown -R appuser:appgroup /app
 
 # Copy built files from builder stage
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/migrations ./migrations
+COPY --from=builder /app/database.json ./database.json
 RUN chown -R appuser:appgroup /app/dist
 
 # Set environment variables
@@ -40,10 +41,18 @@ ENV HOME=/home/appuser
 # Switch to non-root user
 USER appuser
 
-# Create a runtime script to allow switching between implementations
+# Create a runtime script to allow switching between implementations and running migrations
 # Set executable permissions directly during copy
 COPY --chmod=0755 <<EOF /app/entrypoint.sh
 #!/bin/sh
+# Check if the command is to run migrations
+if [ "\$1" = "migrate:up:prod" ]; then
+  echo "Running database migrations..."
+  npm run migrate:up:prod
+  exit \$?
+fi
+
+# Default behavior: run the MCP server
 exec node ./dist/index.js "\$@"
 EOF
 

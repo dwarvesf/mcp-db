@@ -10,7 +10,7 @@ primary_region = 'sin'
   dockerfile = 'Dockerfile'
 
 [deploy]
-  release_command = 'npm run migrate:up:prod'
+  release_command = 'migrate:up:prod'
 
 [processes]
   app = '--transport=sse --port=8000'
